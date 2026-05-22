@@ -1,6 +1,6 @@
 # Hospital Review API
 
-Production-oriented NestJS backend for hospital listings and patient reviews. Built for clarity, consistent API contracts, modular scalability, and a clean transition path to PostgreSQL (Sequelize) and JWT authentication.
+Production-oriented NestJS backend for hospital listings and reviews. Built for clarity, consistent API contracts, modular scalability, and a clean transition path to PostgreSQL (Sequelize) and JWT authentication.
 
 ---
 
