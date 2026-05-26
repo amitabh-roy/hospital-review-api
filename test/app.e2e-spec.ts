@@ -7,7 +7,7 @@ import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { ApiResponse } from '../src/common/interfaces/api-response.interface';
 import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
-import { Hospital } from '../src/modules/hospitals/interfaces/hospital.interface';
+import { HospitalsListResponseDto } from '../src/modules/hospitals/dto/hospitals-list-response.dto';
 
 describe('App (e2e)', () => {
   let app: INestApplication<App>;
@@ -48,10 +48,15 @@ describe('App (e2e)', () => {
       .get('/api/v1/hospitals')
       .expect(200)
       .expect((res) => {
-        const body = res.body as ApiResponse<Hospital[]>;
+        const body = res.body as ApiResponse<HospitalsListResponseDto>;
         expect(body.status).toBe(true);
-        expect(Array.isArray(body.data)).toBe(true);
-        expect(body.data?.length).toBeGreaterThan(0);
+        expect(Array.isArray(body.data?.items)).toBe(true);
+        expect(body.data?.items.length).toBeGreaterThan(0);
+        expect(body.data?.pagination).toBeDefined();
+        expect(typeof body.data?.pagination.page).toBe('number');
+        expect(typeof body.data?.pagination.limit).toBe('number');
+        expect(typeof body.data?.pagination.total).toBe('number');
+        expect(typeof body.data?.pagination.totalPages).toBe('number');
       });
   });
 });

@@ -19,12 +19,34 @@ export default tseslint.config(
       },
       sourceType: 'commonjs',
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: [
+            'eslint.config.mjs',
+            'src/database/sequelize-cli.config.cjs',
+            'src/database/migrations/*.cjs',
+            'src/database/seeders/*.cjs',
+          ],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
   },
   {
+    files: ['src/database/**/*.cjs'],
+    extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+      },
+      sourceType: 'commonjs',
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+    },
+  },
+  {
+    files: ['**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',

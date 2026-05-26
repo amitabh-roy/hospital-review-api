@@ -1,29 +1,44 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
+import { ControllerResponse } from '../../common/interfaces/controller-response.interface';
 import {
   GetHospitalByIdSwagger,
+  GetHospitalSearchSwagger,
   GetHospitalsSwagger,
 } from './docs/hospitals.swagger';
+import { HospitalDetailResponseDto } from './dto/hospital-detail-response.dto';
+import { HospitalsListResponseDto } from './dto/hospitals-list-response.dto';
+import { ListHospitalsQueryDto } from './dto/list-hospitals-query.dto';
+import { SearchHospitalsQueryDto } from './dto/search-hospitals-query.dto';
 import { HospitalsService } from './hospitals.service';
 
-/** Hospital listing routes — read-only until persistence layer is added. */
 @ApiTags('Hospitals')
 @Controller('hospitals')
 export class HospitalsController {
   constructor(private readonly hospitalsService: HospitalsService) {}
 
-  /** GET /api/v1/hospitals */
   @Get()
   @GetHospitalsSwagger()
-  findAll() {
-    return this.hospitalsService.findAll();
+  findAll(
+    @Query() query: ListHospitalsQueryDto,
+  ): Promise<ControllerResponse<HospitalsListResponseDto>> {
+    return this.hospitalsService.findAll(query);
   }
 
-  /** GET /api/v1/hospitals/:id */
+  @Get('search')
+  @GetHospitalSearchSwagger()
+  searchHospitals(
+    @Query() query: SearchHospitalsQueryDto,
+  ): Promise<ControllerResponse<HospitalsListResponseDto>> {
+    return this.hospitalsService.searchHospitals(query);
+  }
+
   @Get(':id')
   @GetHospitalByIdSwagger()
-  findOne(@Param('id') id: string) {
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ControllerResponse<HospitalDetailResponseDto>> {
     return this.hospitalsService.findById(id);
   }
 }

@@ -1,12 +1,28 @@
 import { Module } from '@nestjs/common';
+import { SequelizeModule } from '@nestjs/sequelize';
 
-import { HospitalsModule } from '../hospitals/hospitals.module';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { HospitalModel } from '../../database/models/hospital.model';
+import { HospitalUnitModel } from '../../database/models/hospital-unit.model';
+import { ReviewModel } from '../../database/models/review.model';
+import { RoleModel } from '../../database/models/role.model';
+import { UnitModel } from '../../database/models/unit.model';
+import { UserModel } from '../../database/models/user.model';
 import { ReviewsController } from './reviews.controller';
 import { ReviewsService } from './reviews.service';
 
 @Module({
-  imports: [HospitalsModule],
+  imports: [
+    SequelizeModule.forFeature([
+      ReviewModel,
+      HospitalModel,
+      HospitalUnitModel,
+      UnitModel,
+      UserModel,
+      RoleModel,
+    ]),
+  ],
   controllers: [ReviewsController],
-  providers: [ReviewsService],
+  providers: [ReviewsService, JwtAuthGuard],
 })
 export class ReviewsModule {}

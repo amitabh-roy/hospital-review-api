@@ -1,8 +1,11 @@
 import { plainToInstance } from 'class-transformer';
 import {
+  IsBooleanString,
+  IsNotEmpty,
   IsEnum,
   IsNumber,
   IsOptional,
+  IsString,
   Max,
   Min,
   validateSync,
@@ -24,6 +27,51 @@ class EnvironmentVariables {
   @IsOptional()
   @IsEnum(Environment)
   NODE_ENV?: Environment;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  DB_HOST?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(65535)
+  DB_PORT?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  DB_USER?: string;
+
+  @IsOptional()
+  @IsString()
+  DB_PASSWORD?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  DB_NAME?: string;
+
+  @IsOptional()
+  @IsBooleanString()
+  DB_LOGGING?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  JWT_SECRET?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  JWT_EXPIRES_IN?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(4)
+  @Max(15)
+  BCRYPT_SALT_ROUNDS?: number;
 }
 
 export function validate(

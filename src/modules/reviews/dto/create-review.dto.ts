@@ -1,21 +1,30 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsInt,
-  IsString,
   IsNotEmpty,
+  IsString,
   Max,
-  Min,
   MaxLength,
+  Min,
 } from 'class-validator';
 
 export class CreateReviewDto {
   @ApiProperty({
-    example: '1',
+    example: 1,
     description: 'ID of the hospital being reviewed',
   })
-  @IsString()
-  @IsNotEmpty()
-  hospitalId: string;
+  @IsInt()
+  @Min(1)
+  hospitalId: number;
+
+  @ApiProperty({
+    example: 1,
+    description:
+      'Reusable unit definition ID mapped to the selected hospital',
+  })
+  @IsInt()
+  @Min(1)
+  unitId: number;
 
   @ApiProperty({
     example: 5,
@@ -36,4 +45,22 @@ export class CreateReviewDto {
   @IsNotEmpty()
   @MaxLength(1000)
   comment: string;
+
+  @ApiProperty({
+    example: 'full_time',
+    description: 'Employment arrangement for the reviewer',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  employmentType: string;
+
+  @ApiProperty({
+    example: 'day',
+    description: 'Shift pattern for the reviewer',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  shiftType: string;
 }
