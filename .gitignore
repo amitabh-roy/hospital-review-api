@@ -2,6 +2,7 @@
 /dist
 /node_modules
 /build
+/html
 
 # Archives / local artifacts
 *.zip
