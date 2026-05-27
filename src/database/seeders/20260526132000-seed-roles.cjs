@@ -1,5 +1,27 @@
 'use strict';
 
+const HEALTHCARE_ROLES = [
+  'Advanced Practice RN / NP (APRN)',
+  'Certified Nursing Assistant (CNA)',
+  'Dietitian',
+  'Licensed Practical Nurse (LPN)',
+  'Medical Assistant (MA)',
+  'Medical Laboratory Technician (MLT)',
+  'Occupational Therapist (OT)',
+  'Pharmacist / Pharmacy Tech',
+  'Phlebotomist',
+  'Physical Therapist (PT)',
+  'Physician Assistant (PA-C)',
+  'Radiologic Technologist',
+  'Registered Nurse (RN)',
+  'Respiratory Therapist (RT)',
+  'Social Worker',
+  'Speech-Language Pathologist (SLP)',
+  'Surgical Technologist',
+  'Ultrasound Technologist',
+  'Other',
+];
+
 async function resetSequence(queryInterface, tableName) {
   await queryInterface.sequelize.query(
     `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), COALESCE(MAX(id), 1), true) FROM "${tableName}";`,
@@ -9,16 +31,29 @@ async function resetSequence(queryInterface, tableName) {
 /** @type {import('sequelize-cli').Seeder} */
 module.exports = {
   async up(queryInterface) {
-    await queryInterface.bulkInsert('roles', [
-      { id: 1, name: 'nurse' },
-      { id: 2, name: 'doctor' },
-      { id: 3, name: 'admin' },
-    ]);
+    const roles = [
+      ...HEALTHCARE_ROLES.map((name, index) => ({
+        id: index + 1,
+        name,
+      })),
+      { id: HEALTHCARE_ROLES.length + 1, name: 'admin' },
+    ];
+
+    await queryInterface.bulkInsert('roles', roles);
 
     await resetSequence(queryInterface, 'roles');
   },
 
   async down(queryInterface) {
-    await queryInterface.bulkDelete('roles', { id: [1, 2, 3] }, {});
+    await queryInterface.bulkDelete(
+      'roles',
+      {
+        id: Array.from(
+          { length: HEALTHCARE_ROLES.length + 1 },
+          (_, i) => i + 1,
+        ),
+      },
+      {},
+    );
   },
 };

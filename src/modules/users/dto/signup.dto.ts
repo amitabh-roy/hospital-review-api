@@ -1,11 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
-  IsInt,
   IsNotEmpty,
   IsString,
   MaxLength,
-  Min,
   MinLength,
 } from 'class-validator';
 
@@ -37,10 +35,11 @@ export class SignupDto {
   password: string;
 
   @ApiProperty({
-    example: 1,
-    description: 'Role ID from the seeded roles table',
+    example: 'Registered Nurse (RN)',
+    description: 'Healthcare occupation selected during signup',
   })
-  @IsInt()
-  @Min(1)
-  roleId: number;
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  occupation: string;
 }

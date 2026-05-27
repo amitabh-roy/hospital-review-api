@@ -14,6 +14,7 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { VerifiedUserGuard } from '../../common/guards/verified-user.guard';
 import {
   CreateReviewSwagger,
   GetHospitalReviewsSwagger,
@@ -30,7 +31,7 @@ export class ReviewsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @CreateReviewSwagger()
   create(@Body() dto: CreateReviewDto, @CurrentUser() user: AuthenticatedUser) {
     return this.reviewsService.create(dto, user);

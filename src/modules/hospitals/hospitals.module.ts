@@ -6,6 +6,7 @@ import { HospitalUnitModel } from '../../database/models/hospital-unit.model';
 import { ReviewModel } from '../../database/models/review.model';
 import { UnitModel } from '../../database/models/unit.model';
 
+import { HospitalFiltersService } from './hospital-filters.service';
 import { HospitalsController } from './hospitals.controller';
 import { HospitalsService } from './hospitals.service';
 
@@ -19,7 +20,7 @@ import { HospitalsService } from './hospitals.service';
     ]),
   ],
   controllers: [HospitalsController],
-  providers: [HospitalsService],
-  exports: [HospitalsService],
+  providers: [HospitalsService, HospitalFiltersService],
+  exports: [HospitalsService, HospitalFiltersService],
 })
 export class HospitalsModule {}

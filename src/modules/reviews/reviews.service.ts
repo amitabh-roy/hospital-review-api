@@ -155,6 +155,19 @@ export class ReviewsService {
       status: review.status,
       createdAt: review.createdAt,
       updatedAt: review.updatedAt,
+      hourlyRate:
+        review.hourlyRate === null || review.hourlyRate === undefined
+          ? null
+          : Number(review.hourlyRate),
+      patientRatio: review.patientRatio,
+      mealBreaks: review.mealBreaks,
+      bathroomBreaks: review.bathroomBreaks,
+      parkingCost: review.parkingCost,
+      managementRating:
+        review.managementRating === null || review.managementRating === undefined
+          ? null
+          : Number(review.managementRating),
+      wouldReturn: review.wouldReturn,
     };
   }
 }

@@ -1,5 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import appConfig from './config/app.config';
@@ -19,6 +20,12 @@ import databaseConfig from './database/database.config';
       load: [appConfig, authConfig, databaseConfig],
       validate,
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000,
+        limit: 100,
+      },
+    ]),
     DatabaseModule,
     UsersModule,
     HospitalsModule,

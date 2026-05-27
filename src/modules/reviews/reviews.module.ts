@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { VerifiedUserGuard } from '../../common/guards/verified-user.guard';
 import { HospitalModel } from '../../database/models/hospital.model';
 import { HospitalUnitModel } from '../../database/models/hospital-unit.model';
 import { ReviewModel } from '../../database/models/review.model';
@@ -23,6 +24,6 @@ import { ReviewsService } from './reviews.service';
     ]),
   ],
   controllers: [ReviewsController],
-  providers: [ReviewsService, JwtAuthGuard],
+  providers: [ReviewsService, JwtAuthGuard, VerifiedUserGuard],
 })
 export class ReviewsModule {}

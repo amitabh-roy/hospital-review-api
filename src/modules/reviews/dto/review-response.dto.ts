@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ReviewResponseDto {
   @ApiProperty({ example: 2 })
@@ -48,4 +48,25 @@ export class ReviewResponseDto {
 
   @ApiProperty({ example: '2025-05-22T12:00:00.000Z' })
   updatedAt: Date;
+
+  @ApiPropertyOptional({ example: 43.5 })
+  hourlyRate?: number | null;
+
+  @ApiPropertyOptional({ example: '1 : 5' })
+  patientRatio?: string | null;
+
+  @ApiPropertyOptional({ example: 'Usually' })
+  mealBreaks?: string | null;
+
+  @ApiPropertyOptional({ example: 'Sometimes' })
+  bathroomBreaks?: string | null;
+
+  @ApiPropertyOptional({ example: '$150/mo' })
+  parkingCost?: string | null;
+
+  @ApiPropertyOptional({ example: 3.5 })
+  managementRating?: number | null;
+
+  @ApiPropertyOptional({ example: true })
+  wouldReturn?: boolean | null;
 }

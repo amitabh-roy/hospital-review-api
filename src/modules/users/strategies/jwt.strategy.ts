@@ -20,12 +20,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly userModel: typeof UserModel,
     private readonly usersService: UsersService,
   ) {
+    const jwtSecret = configService.get<string>('auth.jwtSecret');
+
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is not configured');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey:
-        configService.get<string>('auth.jwtSecret') ??
-        'change-me-in-production',
+      secretOrKey: jwtSecret,
     });
   }
 

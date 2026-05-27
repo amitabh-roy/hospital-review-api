@@ -68,11 +68,36 @@ class EnvironmentVariables {
   JWT_EXPIRES_IN?: string;
 
   @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  JWT_REFRESH_EXPIRES_IN?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  EMAIL_VERIFICATION_EXPIRES_IN?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  PASSWORD_RESET_EXPIRES_IN?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  APP_PUBLIC_URL?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(4)
   @Max(15)
   BCRYPT_SALT_ROUNDS?: number;
 }
+
+const INSECURE_JWT_SECRETS = new Set([
+  'change-me-in-production',
+  'hospital-reviews-secret-key',
+]);
 
 export function validate(
   config: Record<string, unknown>,
@@ -88,6 +113,17 @@ export function validate(
       Object.values(error.constraints ?? {}),
     );
     throw new Error(messages.join('; '));
+  }
+
+  const nodeEnv = validated.NODE_ENV ?? Environment.Development;
+  const jwtSecret = validated.JWT_SECRET;
+
+  if (nodeEnv === Environment.Production) {
+    if (!jwtSecret || INSECURE_JWT_SECRETS.has(jwtSecret)) {
+      throw new Error(
+        'JWT_SECRET must be set to a strong unique value in production',
+      );
+    }
   }
 
   return validated;

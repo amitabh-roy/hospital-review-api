@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { HospitalsController } from './hospitals.controller';
-import { HospitalsService } from './hospitals.service';
+import { HospitalFiltersService } from './hospital-filters.service';
+import { HospitalsService } from './hospitals.providers';
 
 describe('HospitalsController', () => {
   let controller: HospitalsController;
@@ -12,10 +13,17 @@ describe('HospitalsController', () => {
     searchHospitals: jest.fn(),
   };
 
+  const hospitalFiltersService = {
+    getFilters: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HospitalsController],
-      providers: [{ provide: HospitalsService, useValue: hospitalsService }],
+      providers: [
+        { provide: HospitalsService, useValue: hospitalsService },
+        { provide: HospitalFiltersService, useValue: hospitalFiltersService },
+      ],
     }).compile();
 
     controller = module.get<HospitalsController>(HospitalsController);

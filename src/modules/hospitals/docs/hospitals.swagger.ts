@@ -6,10 +6,11 @@ import {
   ApiWrappedOkResponse,
 } from '../../../common/docs/swagger.common';
 import { HospitalDetailResponseDto } from '../dto/hospital-detail-response.dto';
+import { HospitalFiltersResponseDto } from '../dto/hospital-filters-response.dto';
 import { HospitalsListResponseDto } from '../dto/hospitals-list-response.dto';
 
-export const GetHospitalsSwagger = () =>
-  applyDecorators(
+export function GetHospitalsSwagger(): MethodDecorator {
+  return applyDecorators(
     ApiOperation({
       summary: 'List hospitals',
       description:
@@ -32,6 +33,7 @@ export const GetHospitalsSwagger = () =>
     ),
     ApiStandardErrorResponses(),
   );
+}
 
 export function GetHospitalSearchSwagger(): MethodDecorator {
   return applyDecorators(
@@ -60,8 +62,8 @@ export function GetHospitalSearchSwagger(): MethodDecorator {
   );
 }
 
-export const GetHospitalByIdSwagger = () =>
-  applyDecorators(
+export function GetHospitalByIdSwagger(): MethodDecorator {
+  return applyDecorators(
     ApiOperation({
       summary: 'Get hospital by ID',
       description:
@@ -71,6 +73,40 @@ export const GetHospitalByIdSwagger = () =>
     ApiWrappedOkResponse(
       HospitalDetailResponseDto,
       'Hospital fetched successfully',
+    ),
+    ApiStandardErrorResponses(),
+  );
+}
+
+export const GetHospitalBySlugSwagger: () => MethodDecorator = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Get hospital by slug',
+      description:
+        'Returns a single hospital using its URL slug (name-id format).',
+    }),
+    ApiParam({
+      name: 'slug',
+      example: 'city-hospital-1',
+      description: 'Hospital slug',
+    }),
+    ApiWrappedOkResponse(
+      HospitalDetailResponseDto,
+      'Hospital fetched successfully',
+    ),
+    ApiStandardErrorResponses(),
+  );
+
+export const GetHospitalFiltersSwagger: () => MethodDecorator = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Get hospital filter options',
+      description:
+        'Returns distinct state and facility type values for search filters.',
+    }),
+    ApiWrappedOkResponse(
+      HospitalFiltersResponseDto,
+      'Hospital filters fetched successfully',
     ),
     ApiStandardErrorResponses(),
   );

@@ -9,6 +9,10 @@ async function resetSequence(queryInterface, tableName) {
 /** @type {import('sequelize-cli').Seeder} */
 module.exports = {
   async up(queryInterface) {
+    console.warn(
+      '[seed-users] WARNING: Seeded accounts use the known password Password@123. For development only — never in production.',
+    );
+
     const bcryptModule = await import('bcrypt');
     const bcrypt = bcryptModule.default ?? bcryptModule;
     const now = new Date();
@@ -20,7 +24,7 @@ module.exports = {
         full_name: 'Taylor Brooks',
         email: 'taylor.brooks@example.com',
         password_hash: passwordHash,
-        role_id: 1,
+        role_id: 13,
         is_verified: true,
         verification_status: 'verified',
         created_at: now,
@@ -31,7 +35,7 @@ module.exports = {
         full_name: 'Dr. Jordan Lee',
         email: 'jordan.lee@example.com',
         password_hash: passwordHash,
-        role_id: 2,
+        role_id: 11,
         is_verified: true,
         verification_status: 'verified',
         created_at: now,
@@ -42,7 +46,7 @@ module.exports = {
         full_name: 'System Admin',
         email: 'admin@example.com',
         password_hash: passwordHash,
-        role_id: 3,
+        role_id: 20,
         is_verified: true,
         verification_status: 'verified',
         created_at: now,

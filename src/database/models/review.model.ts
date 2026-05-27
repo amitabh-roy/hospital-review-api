@@ -99,6 +99,55 @@ export class ReviewModel extends Model {
   })
   declare status: ReviewStatus;
 
+  @Column({
+    type: DataType.DECIMAL(8, 2),
+    allowNull: true,
+    field: 'hourly_rate',
+  })
+  declare hourlyRate: number | null;
+
+  @Column({
+    type: DataType.STRING(20),
+    allowNull: true,
+    field: 'patient_ratio',
+  })
+  declare patientRatio: string | null;
+
+  @Column({
+    type: DataType.STRING(30),
+    allowNull: true,
+    field: 'meal_breaks',
+  })
+  declare mealBreaks: string | null;
+
+  @Column({
+    type: DataType.STRING(30),
+    allowNull: true,
+    field: 'bathroom_breaks',
+  })
+  declare bathroomBreaks: string | null;
+
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+    field: 'parking_cost',
+  })
+  declare parkingCost: string | null;
+
+  @Column({
+    type: DataType.DECIMAL(3, 2),
+    allowNull: true,
+    field: 'management_rating',
+  })
+  declare managementRating: number | null;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: true,
+    field: 'would_return',
+  })
+  declare wouldReturn: boolean | null;
+
   @BelongsTo(() => HospitalModel)
   declare hospital?: HospitalModel;
 

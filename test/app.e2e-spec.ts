@@ -12,6 +12,11 @@ import { HospitalsListResponseDto } from '../src/modules/hospitals/dto/hospitals
 describe('App (e2e)', () => {
   let app: INestApplication<App>;
 
+  beforeAll(() => {
+    process.env.JWT_SECRET =
+      process.env.JWT_SECRET ?? 'e2e-test-jwt-secret-not-for-production';
+  });
+
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],

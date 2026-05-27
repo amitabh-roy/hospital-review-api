@@ -6,7 +6,4 @@ import { UnitResponseDto } from './unit-response.dto';
 export class HospitalDetailResponseDto extends HospitalResponseDto {
   @ApiProperty({ type: [UnitResponseDto] })
   units: UnitResponseDto[];
-
-  @ApiProperty({ example: 12 })
-  approvedReviewCount: number;
 }

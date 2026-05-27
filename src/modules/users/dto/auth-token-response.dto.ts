@@ -15,6 +15,14 @@ export class AuthTokenResponseDto {
   @ApiProperty({ example: '1d' })
   expiresIn: string;
 
+  @ApiProperty({
+    description: 'Opaque refresh token; send to POST /auth/refresh and /auth/logout',
+  })
+  refreshToken: string;
+
+  @ApiProperty({ example: '7d' })
+  refreshExpiresIn: string;
+
   @ApiProperty({ type: AuthUserResponseDto })
   user: AuthUserResponseDto;
 }
