@@ -17,12 +17,6 @@ export class ReviewResponseDto {
   unitName: string;
 
   @ApiProperty({ example: 1 })
-  userId: number;
-
-  @ApiProperty({ example: 'Taylor Brooks' })
-  userFullName: string;
-
-  @ApiProperty({ example: 1 })
   roleId: number;
 
   @ApiProperty({ example: 'nurse' })

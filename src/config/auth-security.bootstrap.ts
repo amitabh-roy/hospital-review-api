@@ -13,7 +13,10 @@ export class AuthSecurityBootstrap implements OnModuleInit {
   constructor(private readonly configService: ConfigService) {}
 
   onModuleInit(): void {
-    const nodeEnv = this.configService.get<string>('app.nodeEnv', 'development');
+    const nodeEnv = this.configService.get<string>(
+      'app.nodeEnv',
+      'development',
+    );
     const jwtSecret = this.configService.get<string>('auth.jwtSecret');
 
     if (!jwtSecret || INSECURE_JWT_SECRETS.has(jwtSecret)) {

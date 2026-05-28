@@ -66,6 +66,13 @@ export const LoginSwagger = () =>
             password: 'Password@123',
           },
         },
+        admin: {
+          summary: 'Seeded admin (for review approval)',
+          value: {
+            email: 'admin@example.com',
+            password: 'Password@123',
+          },
+        },
       },
     }),
     ApiWrappedOkResponse(AuthTokenResponseDto, 'User logged in successfully'),

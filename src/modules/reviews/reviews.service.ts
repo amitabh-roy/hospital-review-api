@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { col, fn } from 'sequelize';
 
 import { ControllerResponse } from '../../common/interfaces/controller-response.interface';
 import { handleDatabaseException } from '../../common/utils/database-exception.util';
@@ -69,6 +70,13 @@ export class ReviewsService {
         employmentType: dto.employmentType.trim().toLowerCase(),
         shiftType: dto.shiftType.trim().toLowerCase(),
         status: 'pending',
+        hourlyRate: dto.hourlyRate ?? null,
+        patientRatio: dto.patientRatio?.trim() || null,
+        mealBreaks: dto.mealBreaks?.trim() || null,
+        bathroomBreaks: dto.bathroomBreaks?.trim() || null,
+        parkingCost: dto.parkingCost?.trim() || null,
+        managementRating: dto.managementRating ?? null,
+        wouldReturn: dto.wouldReturn ?? null,
       });
 
       const review = await this.reviewModel.findByPk(createdReview.id, {
@@ -138,14 +146,61 @@ export class ReviewsService {
     }
   }
 
+  async adminUpdateStatus(
+    reviewId: number,
+    status: ReviewModel['status'],
+  ): Promise<ControllerResponse<ReviewResponseDto>> {
+    try {
+      const review: ReviewModel | null = await this.reviewModel.findByPk(
+        reviewId,
+        {
+          include: [UnitModel, UserModel, RoleModel],
+        },
+      );
+
+      if (!review) {
+        throw new NotFoundException(REVIEW_RESPONSE.NOT_FOUND);
+      }
+
+      await review.update({ status });
+
+      await this.syncHospitalAverageRating(review.hospitalId);
+
+      const message = REVIEW_RESPONSE.UPDATED;
+
+      return {
+        message,
+        data: this.toReviewResponse(review),
+      };
+    } catch (error: unknown) {
+      handleDatabaseException(error, {
+        context: ReviewsService.name,
+        operation: 'admin review status update',
+      });
+    }
+  }
+
+  private async syncHospitalAverageRating(hospitalId: number): Promise<void> {
+    const row = (await this.reviewModel.findOne({
+      attributes: [[fn('AVG', col('rating')), 'avgRating']],
+      where: { hospitalId, status: 'approved' },
+      raw: true,
+    })) as unknown as { avgRating: string | number | null } | null;
+
+    const averageRating = row?.avgRating ? Number(row.avgRating) : 0;
+
+    await this.hospitalModel.update(
+      { averageRating },
+      { where: { id: hospitalId } },
+    );
+  }
+
   private toReviewResponse(review: ReviewModel): ReviewResponseDto {
     return {
       id: review.id,
       hospitalId: review.hospitalId,
       unitId: review.unitId,
       unitName: review.unit?.name ?? '',
-      userId: review.userId,
-      userFullName: review.user?.fullName ?? '',
       roleId: review.roleId,
       roleName: review.role?.name ?? '',
       rating: review.rating,
@@ -164,7 +219,8 @@ export class ReviewsService {
       bathroomBreaks: review.bathroomBreaks,
       parkingCost: review.parkingCost,
       managementRating:
-        review.managementRating === null || review.managementRating === undefined
+        review.managementRating === null ||
+        review.managementRating === undefined
           ? null
           : Number(review.managementRating),
       wouldReturn: review.wouldReturn,

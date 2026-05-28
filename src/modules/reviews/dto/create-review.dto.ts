@@ -1,7 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsInt,
   IsNotEmpty,
+  IsNumber,
+  IsOptional,
   IsString,
   Max,
   MaxLength,
@@ -19,8 +23,7 @@ export class CreateReviewDto {
 
   @ApiProperty({
     example: 1,
-    description:
-      'Reusable unit definition ID mapped to the selected hospital',
+    description: 'Reusable unit definition ID mapped to the selected hospital',
   })
   @IsInt()
   @Min(1)
@@ -63,4 +66,48 @@ export class CreateReviewDto {
   @IsNotEmpty()
   @MaxLength(50)
   shiftType: string;
+
+  @ApiPropertyOptional({ example: 43.5 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  hourlyRate?: number;
+
+  @ApiPropertyOptional({ example: '5–6' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  patientRatio?: string;
+
+  @ApiPropertyOptional({ example: 'Usually' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  mealBreaks?: string;
+
+  @ApiPropertyOptional({ example: 'Sometimes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  bathroomBreaks?: string;
+
+  @ApiPropertyOptional({ example: '$150/mo' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  parkingCost?: string;
+
+  @ApiPropertyOptional({ example: 4, minimum: 1, maximum: 5 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  managementRating?: number;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  wouldReturn?: boolean;
 }

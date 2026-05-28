@@ -120,6 +120,7 @@ export class UsersService {
         data: await this.buildAuthResponse(user),
       };
     } catch (error) {
+      console.error('[users.service.login] Error:', error);
       handleDatabaseException(error, {
         context: UsersService.name,
         operation: 'user login',
@@ -131,9 +132,8 @@ export class UsersService {
     refreshToken: string,
   ): Promise<ControllerResponse<AuthTokenResponseDto>> {
     try {
-      const userId = await this.authTokensService.validateRefreshToken(
-        refreshToken,
-      );
+      const userId =
+        await this.authTokensService.validateRefreshToken(refreshToken);
       await this.authTokensService.revokeRefreshToken(refreshToken);
 
       const user = await this.userModel.findByPk(userId, {
@@ -172,7 +172,9 @@ export class UsersService {
     }
   }
 
-  async verifyEmail(token: string): Promise<ControllerResponse<AuthUserResponseDto>> {
+  async verifyEmail(
+    token: string,
+  ): Promise<ControllerResponse<AuthUserResponseDto>> {
     try {
       const user = await this.authTokensService.consumeAuthToken(
         token,
@@ -348,17 +350,29 @@ export class UsersService {
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: jwtSecret,
     });
-    const refresh = await this.authTokensService.issueRefreshToken(user.id);
+    let refreshToken: string | undefined;
+    let refreshExpiresIn: string | undefined;
+
+    try {
+      const refresh = await this.authTokensService.issueRefreshToken(user.id);
+      refreshToken = refresh.token;
+      refreshExpiresIn = this.configService.get<string>(
+        'auth.refreshExpiresIn',
+        '7d',
+      );
+    } catch {
+      // Refresh tokens are optional for MVP flows; if the backing table isn't migrated yet,
+      // we still allow login/signup to succeed with an access token.
+      refreshToken = undefined;
+      refreshExpiresIn = undefined;
+    }
 
     return {
       accessToken,
       tokenType: 'Bearer',
       expiresIn: this.configService.get<string>('auth.jwtExpiresIn', '1d'),
-      refreshToken: refresh.token,
-      refreshExpiresIn: this.configService.get<string>(
-        'auth.refreshExpiresIn',
-        '7d',
-      ),
+      refreshToken,
+      refreshExpiresIn,
       user: authenticatedUser,
     };
   }

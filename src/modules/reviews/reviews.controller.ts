@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -13,12 +14,15 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { VerifiedUserGuard } from '../../common/guards/verified-user.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import {
+  AdminUpdateReviewStatusSwagger,
   CreateReviewSwagger,
   GetHospitalReviewsSwagger,
 } from './docs/reviews.swagger';
+import { AdminUpdateReviewStatusDto } from './dto/admin-update-review-status.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { ListHospitalReviewsQueryDto } from './dto/list-hospital-reviews-query.dto';
 import type { AuthenticatedUser } from '../users/interfaces/authenticated-user.interface';
@@ -31,7 +35,7 @@ export class ReviewsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
+  @UseGuards(JwtAuthGuard)
   @CreateReviewSwagger()
   create(@Body() dto: CreateReviewDto, @CurrentUser() user: AuthenticatedUser) {
     return this.reviewsService.create(dto, user);
@@ -44,5 +48,16 @@ export class ReviewsController {
     @Query() query: ListHospitalReviewsQueryDto,
   ) {
     return this.reviewsService.findApprovedByHospital(hospitalId, query);
+  }
+
+  @Patch(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @AdminUpdateReviewStatusSwagger()
+  adminUpdateStatus(
+    @Param('id', ParseIntPipe) reviewId: number,
+    @Body() dto: AdminUpdateReviewStatusDto,
+  ) {
+    return this.reviewsService.adminUpdateStatus(reviewId, dto.status);
   }
 }

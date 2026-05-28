@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { AuthUserResponseDto } from './auth-user-response.dto';
 
@@ -15,13 +15,14 @@ export class AuthTokenResponseDto {
   @ApiProperty({ example: '1d' })
   expiresIn: string;
 
-  @ApiProperty({
-    description: 'Opaque refresh token; send to POST /auth/refresh and /auth/logout',
+  @ApiPropertyOptional({
+    description:
+      'Opaque refresh token; send to POST /auth/refresh and /auth/logout (optional when refresh tokens are disabled).',
   })
-  refreshToken: string;
+  refreshToken?: string;
 
-  @ApiProperty({ example: '7d' })
-  refreshExpiresIn: string;
+  @ApiPropertyOptional({ example: '7d' })
+  refreshExpiresIn?: string;
 
   @ApiProperty({ type: AuthUserResponseDto })
   user: AuthUserResponseDto;

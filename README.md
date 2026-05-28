@@ -51,9 +51,9 @@ npm run start:dev
 
 | Resource | URL |
 |----------|-----|
-| API base | `http://localhost:3000/api/v1` |
-| Swagger | `http://localhost:3000/api/docs` |
-| Health | `http://localhost:3000/api/v1/health` |
+| API base | `http://localhost:3001/api/v1` |
+| Swagger | `http://localhost:3001/api/docs` |
+| Health | `http://localhost:3001/api/v1/health` |
 
 ### Production build
 
@@ -119,9 +119,9 @@ All endpoints return the [response envelope](#response-envelope) below.
 ### Example requests
 
 ```bash
-curl http://localhost:3000/api/v1/hospitals
-curl http://localhost:3000/api/v1/hospitals/1
-curl -X POST http://localhost:3000/api/v1/reviews \
+curl http://localhost:3001/api/v1/hospitals
+curl http://localhost:3001/api/v1/hospitals/1
+curl -X POST http://localhost:3001/api/v1/reviews \
   -H "Content-Type: application/json" \
   -d '{"hospitalId":"2","rating":4,"comment":"Good experience"}'
 ```

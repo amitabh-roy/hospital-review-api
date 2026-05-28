@@ -98,10 +98,28 @@ describe('ReviewsService', () => {
         comment: 'Good experience',
         employmentType: 'full_time',
         shiftType: 'day',
+        hourlyRate: 45,
+        patientRatio: '5–6',
+        mealBreaks: 'Usually',
+        bathroomBreaks: 'Sometimes',
+        parkingCost: 'Free',
+        managementRating: 4,
+        wouldReturn: true,
       },
       authenticatedUser,
     );
 
+    expect(reviewModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hourlyRate: 45,
+        patientRatio: '5–6',
+        mealBreaks: 'Usually',
+        bathroomBreaks: 'Sometimes',
+        parkingCost: 'Free',
+        managementRating: 4,
+        wouldReturn: true,
+      }),
+    );
     expect(result.message).toBe(REVIEW_RESPONSE.CREATED);
     expect(result.data.hospitalId).toBe(2);
     expect(result.data.rating).toBe(4);

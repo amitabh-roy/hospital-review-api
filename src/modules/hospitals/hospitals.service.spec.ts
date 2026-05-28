@@ -23,6 +23,7 @@ describe('HospitalsService', () => {
   };
   const reviewModel = {
     count: jest.fn(),
+    findAll: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -44,6 +45,7 @@ describe('HospitalsService', () => {
     hospitalModel.count.mockReset();
     hospitalUnitModel.findAll.mockReset();
     reviewModel.count.mockReset();
+    reviewModel.findAll.mockReset();
   });
 
   it('should return paginated hospitals', async () => {
@@ -61,6 +63,7 @@ describe('HospitalsService', () => {
       ],
       count: 1,
     });
+    reviewModel.findAll.mockResolvedValue([]);
 
     const result = await service.findAll({ page: 1, limit: 10 });
 
@@ -83,6 +86,7 @@ describe('HospitalsService', () => {
       { unit: { id: 1, name: 'ICU' } },
     ]);
     reviewModel.count.mockResolvedValue(2);
+    reviewModel.findAll.mockResolvedValue([]);
 
     const result = await service.findById(1);
 

@@ -2,6 +2,7 @@ import { applyDecorators } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiForbiddenResponse,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -13,6 +14,7 @@ import {
   ApiWrappedCreatedResponse,
   ApiWrappedOkResponse,
 } from '../../../common/docs/swagger.common';
+import { AdminUpdateReviewStatusDto } from '../dto/admin-update-review-status.dto';
 import { CreateReviewDto } from '../dto/create-review.dto';
 import { HospitalReviewsResponseDto } from '../dto/hospital-reviews-response.dto';
 import { ReviewResponseDto } from '../dto/review-response.dto';
@@ -37,6 +39,13 @@ export const CreateReviewSwagger = () =>
             comment: 'Excellent care and friendly staff.',
             employmentType: 'full_time',
             shiftType: 'day',
+            hourlyRate: 43.5,
+            patientRatio: '5–6',
+            mealBreaks: 'Usually',
+            bathroomBreaks: 'Sometimes',
+            parkingCost: '$150/mo',
+            managementRating: 4,
+            wouldReturn: true,
           },
         },
       },
@@ -52,6 +61,63 @@ export const CreateReviewSwagger = () =>
           status: false,
           statusCode: 401,
           message: 'Unauthorized',
+          errors: [],
+          data: null,
+        },
+      },
+    }),
+    ApiStandardErrorResponses(),
+  );
+
+export const AdminUpdateReviewStatusSwagger = () =>
+  applyDecorators(
+    ApiBearerAuth('bearer'),
+    ApiOperation({
+      summary: 'Admin: approve or reject a review',
+      description:
+        'Updates review status (pending, approved, rejected). Requires an **admin** JWT — use **Authorize** (top right) after logging in via `POST /auth/login` with `admin@example.com` / `Password@123` (seeded dev account). Paste only the `accessToken` value from the login response `data` object.',
+    }),
+    ApiParam({
+      name: 'id',
+      example: 1,
+      description: 'Review ID',
+    }),
+    ApiBody({
+      type: AdminUpdateReviewStatusDto,
+      examples: {
+        approve: {
+          summary: 'Approve review',
+          value: { status: 'approved' },
+        },
+        reject: {
+          summary: 'Reject review',
+          value: { status: 'rejected' },
+        },
+      },
+    }),
+    ApiWrappedOkResponse(
+      ReviewResponseDto,
+      'Review status updated successfully',
+    ),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid JWT token',
+      schema: {
+        example: {
+          status: false,
+          statusCode: 401,
+          message: 'Unauthorized',
+          errors: [],
+          data: null,
+        },
+      },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not an admin',
+      schema: {
+        example: {
+          status: false,
+          statusCode: 403,
+          message: 'Forbidden resource',
           errors: [],
           data: null,
         },
