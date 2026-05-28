@@ -11,7 +11,10 @@ import {
 
 import { UserModel } from './user.model';
 
-export const AUTH_TOKEN_TYPES = ['email_verification', 'password_reset'] as const;
+export const AUTH_TOKEN_TYPES = [
+  'email_verification',
+  'password_reset',
+] as const;
 export type AuthTokenType = (typeof AUTH_TOKEN_TYPES)[number];
 
 @Table({

@@ -12,10 +12,10 @@ export const USER_RESPONSE = {
   REFRESH_SUCCESS: 'Token refreshed successfully',
   EMAIL_VERIFIED: 'Email verified successfully',
   VERIFICATION_EMAIL_SENT: 'Verification email sent if the account exists',
-  PASSWORD_RESET_EMAIL_SENT:
-    'Password reset email sent if the account exists',
+  PASSWORD_RESET_EMAIL_SENT: 'Password reset email sent if the account exists',
   PASSWORD_RESET_SUCCESS: 'Password reset successfully',
-  EMAIL_NOT_VERIFIED: 'Email verification is required before submitting reviews',
+  EMAIL_NOT_VERIFIED:
+    'Email verification is required before submitting reviews',
   ALREADY_VERIFIED: 'Email is already verified',
   VERIFICATION_UPDATED: 'User verification status updated',
 } as const;

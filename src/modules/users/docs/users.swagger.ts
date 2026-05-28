@@ -146,7 +146,10 @@ export const ResendVerificationSwagger = () =>
   applyDecorators(
     ApiBearerAuth('bearer'),
     ApiOperation({ summary: 'Resend verification email' }),
-    ApiWrappedOkResponse(Object, 'Verification email sent if the account exists'),
+    ApiWrappedOkResponse(
+      Object,
+      'Verification email sent if the account exists',
+    ),
     ApiUnauthorizedResponse({ description: 'Missing or invalid JWT token' }),
     ApiStandardErrorResponses(),
   );

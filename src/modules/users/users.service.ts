@@ -246,7 +246,7 @@ export class UsersService {
           user.id,
           'password_reset',
         );
-        await this.emailService.sendPasswordResetEmail(user.email, token);
+        this.emailService.sendPasswordResetEmail(user.email, token);
       }
 
       return {
@@ -332,7 +332,7 @@ export class UsersService {
       user.id,
       'email_verification',
     );
-    await this.emailService.sendVerificationEmail(user.email, token);
+    this.emailService.sendVerificationEmail(user.email, token);
   }
 
   private async buildAuthResponse(

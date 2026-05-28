@@ -7,18 +7,18 @@ export class EmailService {
 
   constructor(private readonly configService: ConfigService) {}
 
-  async sendVerificationEmail(email: string, token: string): Promise<void> {
+  sendVerificationEmail(email: string, token: string): void {
     const link = this.buildLink('/verify-email', token);
-    await this.deliver(
+    this.deliver(
       email,
       'Verify your OpenCurtain account',
       `Verify your email: ${link}`,
     );
   }
 
-  async sendPasswordResetEmail(email: string, token: string): Promise<void> {
+  sendPasswordResetEmail(email: string, token: string): void {
     const link = this.buildLink('/reset-password', token);
-    await this.deliver(
+    this.deliver(
       email,
       'Reset your OpenCurtain password',
       `Reset your password: ${link}`,
@@ -33,12 +33,11 @@ export class EmailService {
     return `${baseUrl}${path}?token=${encodeURIComponent(token)}`;
   }
 
-  private async deliver(
-    to: string,
-    subject: string,
-    body: string,
-  ): Promise<void> {
-    const nodeEnv = this.configService.get<string>('app.nodeEnv', 'development');
+  private deliver(to: string, subject: string, body: string): void {
+    const nodeEnv = this.configService.get<string>(
+      'app.nodeEnv',
+      'development',
+    );
 
     if (nodeEnv === 'production') {
       this.logger.warn(
