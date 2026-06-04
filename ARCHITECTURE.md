@@ -220,8 +220,8 @@ Module messages belong in `modules/<feature>/constants/*.response.ts`.
 
 | File | Role |
 |------|------|
-| `.env` | Local secrets and overrides (gitignored) |
-| `.env.example` | Committed template |
+| `.env.example` | Committed template; `cp .env.example .env` per machine |
+| `.env` | Real secrets (gitignored) |
 | `config/app.config.ts` | Port, CORS, bcrypt rounds, `NODE_ENV` |
 | `config/auth.config.ts` | JWT and token TTLs, `APP_PUBLIC_URL` |
 | `database/database.config.ts` | PostgreSQL connection settings |

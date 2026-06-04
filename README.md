@@ -67,39 +67,44 @@ npm run start:dev
 | Swagger | `http://localhost:3001/api/docs` |
 | Health | `http://localhost:3001/api/v1/health` |
 
-### Production build
+### Production
 
 ```bash
+cp .env.example .env   # set NODE_ENV=production, RDS credentials, strong JWT_SECRET
+npm run db:migrate
 npm run build
 npm run start:prod
 ```
 
-In production, set `NODE_ENV=production` and a strong unique `JWT_SECRET`. Run migrations against the target database before starting the app.
+**Same EC2 as the web app:** `HOST=127.0.0.1` (API reachable via Next rewrites only); `CORS_ORIGIN` and `APP_PUBLIC_URL` = your public HTTPS site URL.
+
+**Health check:** `GET /api/v1/health` for load balancers and uptime monitors.
 
 ---
 
 ## Environment Variables
 
-Copy `.env.example` to `.env`. Do not commit real secrets.
+Use **one `.env` file** on each machine: `cp .env.example .env` and edit values. Do not commit `.env`.
 
-| Variable | Default (example) | Description |
-|----------|-------------------|-------------|
-| `PORT` | `3001` | HTTP listen port |
-| `NODE_ENV` | `development` | `development` \| `production` \| `test` |
-| `CORS_ORIGIN` | `http://localhost:3000` | Allowed browser origin for credentialed requests |
-| `DB_HOST` | `localhost` | PostgreSQL host |
-| `DB_PORT` | `5432` | PostgreSQL port |
-| `DB_USER` | `postgres` | Database user |
-| `DB_PASSWORD` | — | Database password |
-| `DB_NAME` | `opencurtain_db` | Database name |
-| `DB_LOGGING` | `false` | Log SQL when `true` |
-| `JWT_SECRET` | — | Signing secret for access tokens (required in practice) |
-| `JWT_EXPIRES_IN` | `1d` | Access token lifetime |
-| `JWT_REFRESH_EXPIRES_IN` | `7d` | Refresh token lifetime |
-| `EMAIL_VERIFICATION_EXPIRES_IN` | `24h` | Email verification token TTL |
-| `PASSWORD_RESET_EXPIRES_IN` | `1h` | Password reset token TTL |
-| `APP_PUBLIC_URL` | `http://localhost:3000` | Frontend base URL for links in dev email logs |
-| `BCRYPT_SALT_ROUNDS` | `10` | bcrypt cost factor |
+| Variable | Description |
+|----------|-------------|
+| `PORT` | HTTP listen port (e.g. `3001`) |
+| `NODE_ENV` | `development` \| `production` \| `test` |
+| `HOST` | Bind address (`0.0.0.0` local; `127.0.0.1` on EC2 when only Next proxies to the API) |
+| `CORS_ORIGIN` | Allowed browser origin (e.g. `http://localhost:3000` or `https://www.yourdomain.com`) |
+| `DB_HOST` | PostgreSQL host |
+| `DB_PORT` | PostgreSQL port |
+| `DB_USER` | Database user |
+| `DB_PASSWORD` | Database password |
+| `DB_NAME` | Database name |
+| `DB_LOGGING` | Log SQL when `true` |
+| `JWT_SECRET` | Signing secret for access tokens (required; strong in production) |
+| `JWT_EXPIRES_IN` | Access token lifetime |
+| `JWT_REFRESH_EXPIRES_IN` | Refresh token lifetime |
+| `EMAIL_VERIFICATION_EXPIRES_IN` | Email verification token TTL |
+| `PASSWORD_RESET_EXPIRES_IN` | Password reset token TTL |
+| `APP_PUBLIC_URL` | Frontend base URL for email links |
+| `BCRYPT_SALT_ROUNDS` | bcrypt cost factor |
 
 **Architecture:** See [ARCHITECTURE.md](./ARCHITECTURE.md) for folder conventions, request flow, and database/auth design.
 
@@ -366,6 +371,14 @@ Use Swagger or Postman against a running `start:dev` instance for full auth and 
 | Testable via Swagger / Postman | Done |
 
 Additional endpoints (refresh tokens, email verification, password reset, admin moderation, review stats on listings) are implemented on top of this foundation and documented above.
+
+---
+
+## Related Projects
+
+| Project | Path | Role |
+|---------|------|------|
+| OpenCurtain Web | [`../opencurtain-web`](../opencurtain-web) | Next.js frontend |
 
 ---
 

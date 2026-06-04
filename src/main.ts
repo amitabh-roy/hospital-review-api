@@ -42,7 +42,8 @@ async function bootstrap() {
   setupSwagger(app);
 
   const port = configService.get<number>('app.port', 3001);
-  await app.listen(port);
+  const host = configService.get<string>('app.host', '0.0.0.0');
+  await app.listen(port, host);
 }
 
 void bootstrap().catch((error: unknown) => {
