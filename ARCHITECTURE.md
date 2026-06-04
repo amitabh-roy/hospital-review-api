@@ -1,18 +1,18 @@
 # Architecture Guide
 
-How this backend is organized today, how requests flow, and where to add code when PostgreSQL (Sequelize) and JWT auth are introduced.
+How this backend is organized, how requests flow, and how PostgreSQL, Sequelize, and JWT authentication fit together.
 
-For API usage and setup, see [README.md](./README.md).
+For setup, environment variables, and endpoint list, see [README.md](./README.md).
 
 ---
 
 ## Design principles
 
-1. **Modular monolith** — one deployable NestJS app, domains split by feature module.
-2. **Thin controllers** — routing, validation, and Swagger only; business rules live in services.
+1. **Modular monolith** — one deployable NestJS app, domains split by feature module (`hospitals`, `reviews`, `users`).
+2. **Thin controllers** — routing, validation, guards, and Swagger only; business rules live in services.
 3. **Unified API contract** — every route returns the same envelope via global interceptor and exception filter.
-4. **Progressive complexity** — in-memory mocks today, Sequelize repositories and PostgreSQL integration later without restructuring the application architecture.
-5. **Future-ready scaffolding** — folders like `database/`, `guards/`, and `users/` intentionally exist early to avoid large structural refactors when authentication and persistence layers are introduced.
+4. **Sequelize at the persistence boundary** — services inject Sequelize models (`@InjectModel`); no separate repository layer yet.
+5. **Stable module layout** — new features add DTOs, constants, docs, and services under `modules/<feature>/` without reshaping the tree.
 
 ---
 
@@ -21,8 +21,10 @@ For API usage and setup, see [README.md](./README.md).
 ```
 Client
   → RequestLoggerMiddleware (method + URL)
+  → ThrottlerGuard (auth routes)
+  → JwtAuthGuard / RolesGuard (protected routes)
   → Controller (route + DTO validation)
-  → Service (business logic)
+  → Service (business logic + Sequelize)
   → ControllerResponse { message, data }
   → ResponseInterceptor → ApiResponse envelope
   → Client
@@ -33,11 +35,13 @@ Validation fails → ValidationPipe → BadRequestException → filter
 
 | Layer | Location | Responsibility |
 |-------|----------|----------------|
-| Bootstrap | `src/main.ts` | Global prefix `api/v1`, pipes, interceptor, filter, Swagger |
-| Config | `src/config/` | Env validation, `app` config namespace, Swagger setup |
+| Bootstrap | `src/main.ts` | Global prefix `api/v1`, CORS, pipes, interceptor, filter, Swagger |
+| Config | `src/config/` | `app`, `auth`, `database` namespaces; env validation at startup |
 | Middleware | `src/common/middleware/` | Cross-cutting HTTP logging |
-| Controllers | `src/modules/*/*.controller.ts` | Routes, Swagger decorators, delegate to service |
-| Services | `src/modules/*/*.service.ts` | Business rules, orchestration |
+| Guards | `src/common/guards/` | JWT auth, admin roles, optional verified-user check |
+| Controllers | `src/modules/*/*.controller.ts` | Routes, Swagger, delegate to service |
+| Services | `src/modules/*/*.service.ts` | Business rules, Sequelize queries |
+| Models | `src/database/models/` | Table definitions and associations |
 | Cross-cutting | `src/common/filters`, `interceptors` | Envelope formatting |
 
 ---
@@ -49,12 +53,12 @@ Validation fails → ValidationPipe → BadRequestException → filter
 | Path | Purpose |
 |------|---------|
 | `main.ts` | Application entry; wires global Nest primitives |
-| `app.module.ts` | Imports feature modules, config, middleware |
-| `config/` | `app.config.ts`, `env.validation.ts`, `swagger.config.ts` |
+| `app.module.ts` | Config, throttling, `DatabaseModule`, feature modules |
+| `config/` | `app.config.ts`, `auth.config.ts`, `database.config.ts`, `env.validation.ts`, Swagger |
 | `health/` | Liveness probe (`GET /api/v1/health`) |
 | `common/` | Shared infrastructure (not domain logic) |
-| `database/` | Sequelize home (migrations, models, seeders) — scaffolded |
-| `modules/` | Domain features (hospitals, reviews, users) |
+| `database/` | Migrations, models, seeders, `DatabaseModule` |
+| `modules/` | Domain features (hospitals, reviews, users/auth) |
 
 ### `common/` — shared infrastructure
 
@@ -63,149 +67,129 @@ Validation fails → ValidationPipe → BadRequestException → filter
 | `constants/` | Messages used across modules |
 | `dto/` | Swagger schemas shared by multiple modules |
 | `docs/` | Reusable Swagger decorators (`ApiWrappedOkResponse`, etc.) |
+| `decorators/` | `@CurrentUser()`, `@Roles()` |
+| `guards/` | `JwtAuthGuard`, `RolesGuard`, `VerifiedUserGuard` |
 | `filters/` | Global exception handling |
 | `interceptors/` | Global success response wrapping |
 | `interfaces/` | `ApiResponse`, `ControllerResponse` types |
-| `middleware/` | Nest middleware (logging, etc.) |
-| `utils/` | Pure helpers (e.g. validation flattening) |
-| `guards/` | **Future:** JWT, roles, `@UseGuards()` |
-| `exceptions/` | **Future:** custom `HttpException` subclasses |
+| `middleware/` | Nest middleware (logging) |
+| `utils/` | Pure helpers (validation, slugs, DB errors, review stats) |
 
 Do **not** put hospital/review business logic in `common/`.
 
-### Feature module (`modules/<feature>/`)
+### `database/`
 
-Standard layout per domain:
+| Path | Contents |
+|------|----------|
+| `database.module.ts` | Global Sequelize connection to PostgreSQL (`synchronize: false`) |
+| `database.providers.ts` | Exported model list for `SequelizeModule.forFeature()` |
+| `models/` | `Role`, `User`, `Hospital`, `Unit`, `HospitalUnit`, `Review`, token models |
+| `migrations/` | Versioned schema (roles → users → hospitals → units → reviews → auth tokens) |
+| `seeders/` | Roles, units, hospitals, hospital_units, users, reviews |
+
+### Feature module (`modules/<feature>/`)
 
 ```
 modules/hospitals/
 ├── hospitals.module.ts
 ├── hospitals.controller.ts
 ├── hospitals.service.ts
-├── constants/          # User-facing response messages
-├── dto/                # Request/response DTOs + class-validator + @ApiProperty
-├── docs/               # applyDecorators Swagger bundles per route
-├── interfaces/         # Domain types (until Sequelize models replace some)
-└── data/               # TEMPORARY in-memory mocks — delete after repositories exist
+├── hospital-filters.service.ts
+├── constants/
+├── dto/
+├── docs/
+└── utils/
 ```
 
-| Folder | Keep after DB? |
-|--------|----------------|
-| `constants/` | Yes |
-| `dto/` | Yes |
-| `docs/` | Yes |
-| `interfaces/` | Optional — may align with or wrap Sequelize model types |
-| `data/` | **No** — remove when repositories are wired |
-
----
-
-## Adding a new feature module
-
-1. `nest g module modules/<name>` (or create files manually following hospitals/reviews).
-2. Add `constants/<name>.response.ts` for messages.
-3. Add DTOs in `dto/` with validation + `@ApiProperty`.
-4. Add Swagger decorators in `docs/<name>.swagger.ts` using `common/docs/swagger.common.ts`.
-5. Implement service returning `ControllerResponse<T>`.
-6. Wire controller routes; import module in `app.module.ts`.
-7. Export service from module if other modules depend on it (e.g. reviews → hospitals).
-
----
-
-## Phase 2: Sequelize + PostgreSQL
-
-### 1. Environment
-
-Uncomment and set in `.env` (see `.env.example`):
-
-- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
-
-Extend `src/config/app.config.ts` and `src/config/env.validation.ts` for required DB vars in production.
-
-### 2. Database layer (`src/database/`)
-
-| Path | Contents |
-|------|----------|
-| `models/` | Sequelize model definitions (`Hospital`, `Review`, `User`) |
-| `migrations/` | Versioned schema changes |
-| `seeders/` | Dev/staging seed scripts |
-| `database.module.ts` | **Add:** Nest module exporting Sequelize instance |
-
-Register `DatabaseModule` in `app.module.ts` (global or imported by feature modules).
-
-### 3. Repository pattern (per feature module)
-
-Add when mocks are removed:
-
-```
-modules/hospitals/
-├── repositories/
-│   └── hospitals.repository.ts   # findAll, findById, exists — uses Sequelize models
-```
-
-**Service change:** inject `HospitalsRepository` instead of reading `HOSPITALS_MOCK`.
+| Folder | Purpose |
+|--------|---------|
+| `constants/` | User-facing response messages |
+| `dto/` | Request/response DTOs + class-validator + `@ApiProperty` |
+| `docs/` | `applyDecorators` Swagger bundles per route |
+| `utils/` | Domain-specific pure helpers (e.g. hospital review stats) |
+| `data/` | **Legacy only** — unused mock files; services use Sequelize models |
 
 ```text
-Controller → Service → Repository → Sequelize Model → PostgreSQL
+Controller → Service → Sequelize Model → PostgreSQL
 ```
 
-### 4. Remove temporary mocks
-
-- Delete `modules/hospitals/data/hospitals.mock.ts`
-- Delete `modules/reviews/data/reviews.mock.ts`
-- Remove `data/` folders if empty
-
-### 5. Reviews + hospitals
-
-Keep `ReviewsModule` importing `HospitalsModule` (or import only `HospitalsRepository` via a shared export). `exists(hospitalId)` moves to repository.
+`ReviewsModule` uses hospital and unit data via injected models and validates `hospital_units` before create.
 
 ---
 
-## Phase 3: Authentication (JWT)
+## Data model (role- and unit-aware)
 
-### 1. Users module (`src/modules/users/`)
+Core relationships for Milestone 1:
+
+- **`roles`** — occupation catalog; each **`users`** row has `role_id`.
+- **`units`** — global unit names (ICU, Med-Surg, …).
+- **`hospital_units`** — many-to-many: which units a given hospital offers.
+- **`reviews`** — `hospital_id`, `unit_id`, `user_id`, `role_id` (role at submit time from JWT user), plus rating, comment, employment/shift fields, `status`, and optional compensation/workload fields.
+
+Unique constraint: one review per `(hospital_id, user_id)`.
+
+Reviews are created as `pending`; public hospital review lists filter to `approved`.
+
+---
+
+## Authentication
+
+### Users module (`modules/users/`)
 
 | File | Role |
 |------|------|
-| `users.module.ts` | Auth + user registration/login |
-| `users.service.ts` | Credentials, user lookup |
-| `users.controller.ts` | `POST /auth/register`, `POST /auth/login` (under `api/v1`) |
-| `dto/` | Register/login DTOs |
+| `users.module.ts` | JWT, Passport, Sequelize models, `AuthTokensService`, `EmailService` |
+| `users.controller.ts` | Routes under `auth/` (signup, login, refresh, verify, reset, me, admin) |
+| `users.service.ts` | Signup (bcrypt hash, role lookup by occupation), login, token issuance |
+| `auth-tokens.service.ts` | Refresh token persistence; verification/reset token storage |
+| `strategies/jwt.strategy.ts` | Validates access token; loads user + role |
+| `email.service.ts` | Dev: logs links; production: warns if SMTP not configured |
 
-### 2. Guards (`src/common/guards/`)
+### Guards
 
-| File | Role |
-|------|------|
-| `jwt-auth.guard.ts` | Protect routes; read user from JWT |
-| `optional: roles.guard.ts` | RBAC if needed |
+| Guard | Role |
+|-------|------|
+| `jwt-auth.guard.ts` | Requires valid Bearer access token |
+| `roles.guard.ts` | Enforces `@Roles('admin')` (and similar) |
+| `verified-user.guard.ts` | Optional gate for verified accounts |
 
-Apply on controllers:
+Protected example: `POST /api/v1/reviews` uses `JwtAuthGuard`; `userId` and `roleId` come from the JWT payload, not the request body.
 
-```typescript
-@UseGuards(JwtAuthGuard)
-@Post()
-create(@Body() dto: CreateReviewDto, @CurrentUser() user: UserPayload) { ... }
-```
+### Token flow
 
-### 3. Reviews service
+1. Signup/login → access JWT + opaque refresh token (refresh stored hashed in `refresh_tokens`).
+2. `POST /auth/refresh` → rotate refresh token, return new pair.
+3. `POST /auth/logout` → revoke refresh token row.
 
-- Remove `MOCK_USER_ID` constant.
-- Set `userId` from JWT payload in controller, pass to service.
-- Enforce one review per user per hospital at DB level (unique index) + service check.
+Email verification and password reset use rows in `auth_tokens`; links use `APP_PUBLIC_URL` and are logged in development.
 
-### 4. Environment
+---
 
-Uncomment in `.env`:
+## Hospitals module
 
-- `JWT_SECRET` (strong random string in production)
-- `JWT_EXPIRES_IN`
+| Concern | Implementation |
+|---------|----------------|
+| List / filter | `findAndCountAll` with `Op.iLike` on city, state, facility type; rating range on `average_rating` |
+| Search | Same as list plus `Op.or` across name, city, state, `cms_id`, `facility_type` |
+| Detail | Hospital row + `hospital_units` → units; approved review count and aggregated stats |
+| Slug route | Parses `name-id` slug to numeric id |
+| Filters endpoint | Distinct states and facility types from live data |
 
-Validate in `env.validation.ts`; never commit real secrets (`.env` is gitignored).
+---
+
+## Reviews module
+
+| Concern | Implementation |
+|---------|----------------|
+| Create | Validates hospital, hospital-unit mapping, no duplicate user review; sets `roleId` from authenticated user |
+| List by hospital | Paginated, `status: approved`, includes unit/role/user |
+| Admin status | `PATCH :id/status` with `RolesGuard` + `admin` |
 
 ---
 
 ## API response contract
 
-All handlers should return **`ControllerResponse<T>`** from services/controllers:
+All handlers should return **`ControllerResponse<T>`** from services:
 
 ```typescript
 { message: string; data: T }
@@ -217,9 +201,9 @@ The global **`ResponseInterceptor`** converts to:
 { status: true, statusCode, message, errors: [], data }
 ```
 
-Throw Nest **`HttpException`** (or subclasses) for errors; **`HttpExceptionFilter`** formats failures consistently.
+Throw Nest **`HttpException`** for errors; **`HttpExceptionFilter`** formats failures consistently.
 
-Module messages belong in `modules/<feature>/constants/*.response.ts`, not hardcoded in controllers.
+Module messages belong in `modules/<feature>/constants/*.response.ts`.
 
 ---
 
@@ -227,8 +211,8 @@ Module messages belong in `modules/<feature>/constants/*.response.ts`, not hardc
 
 - **Per-route bundles:** `modules/<feature>/docs/*.swagger.ts` using `applyDecorators`.
 - **Shared wrappers:** `common/docs/swagger.common.ts` for envelope + error examples.
-- **DTOs:** `@ApiProperty` on all public fields; response DTOs for documented `data` shapes.
-- **UI:** `/api/docs` (configured in `config/swagger.config.ts`).
+- **Bearer auth:** `@ApiBearerAuth('bearer')` on protected routes; authorize in Swagger UI after login.
+- **UI:** `/api/docs` (see `config/swagger.config.ts`).
 
 ---
 
@@ -237,9 +221,11 @@ Module messages belong in `modules/<feature>/constants/*.response.ts`, not hardc
 | File | Role |
 |------|------|
 | `.env` | Local secrets and overrides (gitignored) |
-| `.env.example` | Committed template for the team |
-| `config/app.config.ts` | `registerAs('app', …)` — access via `ConfigService.get('app.port')` |
-| `config/env.validation.ts` | Fail fast on invalid env at startup |
+| `.env.example` | Committed template |
+| `config/app.config.ts` | Port, CORS, bcrypt rounds, `NODE_ENV` |
+| `config/auth.config.ts` | JWT and token TTLs, `APP_PUBLIC_URL` |
+| `database/database.config.ts` | PostgreSQL connection settings |
+| `config/env.validation.ts` | Fail fast on invalid env; enforces strong `JWT_SECRET` in production |
 
 ---
 
@@ -247,31 +233,43 @@ Module messages belong in `modules/<feature>/constants/*.response.ts`, not hardc
 
 | Type | Location | Notes |
 |------|----------|-------|
-| Unit | `*.spec.ts` next to service/controller | Mock dependencies (repositories later) |
-| E2E | `test/*.e2e-spec.ts` | Boot full app with same global prefix, interceptor, filter |
+| Unit | `*.spec.ts` next to service/controller | Mock Sequelize models with `jest` |
+| E2E | `test/app.e2e-spec.ts` | Full app module; expects DB with seed data for hospital list |
 
-When DB is added, use a test database or transactional tests; keep E2E focused on HTTP contract.
+Set `JWT_SECRET` in the test environment (e2e sets a fallback if unset).
+
+---
+
+## Adding a new feature module
+
+1. Create `modules/<name>/` following hospitals/reviews layout.
+2. Add `constants/<name>.response.ts`, DTOs, `docs/*.swagger.ts`.
+3. Implement service returning `ControllerResponse<T>`; register models in the module via `SequelizeModule.forFeature`.
+4. Import the module in `app.module.ts`.
+5. Add migrations/seeders if new tables are required.
+
+Optional later: extract `repositories/` if query complexity grows; not required today.
 
 ---
 
 ## What not to do
 
 - Put domain logic in `common/` or `main.ts`.
-- Return raw entities without going through the response envelope pattern.
-- Skip `constants/` and hardcode user-facing strings in controllers.
-- Add `repositories/` or `database/` abstractions before you actually need Sequelize.
+- Return raw entities without the response envelope pattern.
+- Hardcode user-facing strings in controllers (use `constants/`).
+- Enable `synchronize: true` in production (use migrations).
 - Commit `.env` or production secrets to git.
 
 ---
 
-## Quick reference: current vs future
+## Optional future work
 
-| Concern | Now (MVP) | After Sequelize + auth |
-|---------|-----------|-------------------------|
-| Hospitals data | `data/hospitals.mock.ts` | `repositories/` + `database/models/` |
-| Reviews data | `data/reviews.mock.ts` | `repositories/` + `database/models/` |
-| User identity | `user-mock-1` in reviews service | JWT + `modules/users/` |
-| Auth guards | `.gitkeep` only | `common/guards/jwt-auth.guard.ts` |
-| Health | `health/health.controller.ts` | Optional: Terminus + DB ping |
+| Area | Idea |
+|------|------|
+| Email | Wire SMTP or provider in `EmailService` for production |
+| Repositories | Thin repository layer if services grow large |
+| Health | Terminus module with DB ping |
+| Cleanup | Remove unused `modules/*/data/*.mock.ts` files |
+| E2E | Broader coverage for auth signup/login and review create |
 
-This structure is intended to stay stable across those phases—only fill in scaffolded folders and replace mocks, not rearrange the tree.
+The current tree is intended to stay stable; extend modules and migrations rather than reorganizing the app.

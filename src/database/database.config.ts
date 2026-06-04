@@ -6,6 +6,6 @@ export default registerAs('database', () => ({
   port: parseInt(process.env.DB_PORT ?? '5432', 10),
   username: process.env.DB_USER ?? 'postgres',
   password: process.env.DB_PASSWORD ?? 'password',
-  database: process.env.DB_NAME ?? 'hospital_reviews',
+  database: process.env.DB_NAME ?? 'opencurtain_db',
   logging: process.env.DB_LOGGING === 'true',
 }));

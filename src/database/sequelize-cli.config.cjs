@@ -16,7 +16,7 @@ module.exports = {
     port: Number(process.env.DB_PORT || 5432),
     username: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME || 'hospital_reviews',
+    database: process.env.DB_NAME || 'opencurtain_db',
     logging: process.env.DB_LOGGING === 'true',
     define: {
       underscored: true,
@@ -28,7 +28,7 @@ module.exports = {
     port: Number(process.env.DB_PORT || 5432),
     username: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME || 'hospital_reviews_test',
+    database: process.env.DB_NAME || 'opencurtain_db_test',
     logging: false,
     define: {
       underscored: true,
@@ -40,7 +40,7 @@ module.exports = {
     port: Number(process.env.DB_PORT || 5432),
     username: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME || 'hospital_reviews',
+    database: process.env.DB_NAME || 'opencurtain_db',
     logging: false,
     define: {
       underscored: true,

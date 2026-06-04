@@ -10,6 +10,8 @@ import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health/health.controller';
 import { HospitalsModule } from './modules/hospitals/hospitals.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { RolesModule } from './modules/roles/roles.module';
+import { UnitsModule } from './modules/units/units.module';
 import { UsersModule } from './modules/users/users.module';
 import databaseConfig from './database/database.config';
 
@@ -28,6 +30,8 @@ import databaseConfig from './database/database.config';
     ]),
     DatabaseModule,
     UsersModule,
+    RolesModule,
+    UnitsModule,
     HospitalsModule,
     ReviewsModule,
   ],
