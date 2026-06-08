@@ -1,0 +1,109 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches:
+      - devops
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+  EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+  SNS_TOPIC_ARN: ${{ vars.SNS_TOPIC_ARN }}
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: 0
+          ignore-unfixed: true
+
+  deploy:
+    needs: security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate SSM Access
+        run: |
+          aws ssm get-parameter \
+            --name OPEN_CURTAIN_JWT_SECRET \
+            --with-decryption \
+            --region "$AWS_REGION" > /dev/null
+
+      - name: Deploy via SSM
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "GitHub Deployment" \
+            --parameters '{"commands":["set -e","cd /home/ubuntu/app","git fetch origin","git checkout devops","git pull origin devops","npm ci","npm run build","npm run db:migrate || true","pm2 reload hospital-review-api --update-env","pm2 save"]}' \
+            --query "Command.CommandId" \
+            --output text \
+            --region "$AWS_REGION")
+          echo "COMMAND_ID=$COMMAND_ID" >> $GITHUB_ENV
+          echo "Command ID: $COMMAND_ID"
+          sleep 30
+
+      - name: Fetch Deployment Logs
+        if: always()
+        run: |
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$EC2_INSTANCE_ID" \
+            --region "$AWS_REGION" \
+            > deployment-output.json
+          cat deployment-output.json
+
+      - name: SNS Success Notification
+        if: success()
+        run: |
+          OUTPUT=$(jq -r '.StandardOutputContent' deployment-output.json | tail -c 3000)
+          cat > success.txt << EOF
+          Deployment completed successfully
+          Command ID: $COMMAND_ID
+          Logs:
+          $OUTPUT
+          EOF
+          aws sns publish \
+            --topic-arn "$SNS_TOPIC_ARN" \
+            --subject "Backend Deployment Successful" \
+            --message file://success.txt \
+            --region "$AWS_REGION"
+
+      - name: SNS Failure Notification
+        if: failure()
+        run: |
+          ERRORS=$(jq -r '.StandardErrorContent' deployment-output.json | tail -c 3000)
+          cat > failure.txt << EOF
+          Deployment failed
+          Command ID: $COMMAND_ID
+          Error Logs:
+          $ERRORS
+          EOF
+          aws sns publish \
+            --topic-arn "$SNS_TOPIC_ARN" \
+            --subject "Backend Deployment Failed" \
+            --message file://failure.txt \
+            --region "$AWS_REGION"
