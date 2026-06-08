@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 
+import { getDatabaseDialectOptions } from './database-ssl';
 import { databaseModels } from './database.providers';
 
 @Global()
@@ -24,6 +25,7 @@ import { databaseModels } from './database.providers';
         define: {
           underscored: true,
         },
+        ...getDatabaseDialectOptions(),
       }),
     }),
   ],

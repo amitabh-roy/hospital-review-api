@@ -99,6 +99,7 @@ Use **one `.env` file** on each machine: `cp .env.example .env` and edit values.
 | `DB_USER` | Database user |
 | `DB_PASSWORD` | Database password |
 | `DB_NAME` | Database name |
+| `DB_SSL` | Set `true` for **AWS RDS** (required; fixes “no encryption” / pg_hba errors) |
 | `DB_LOGGING` | Log SQL when `true` |
 | `JWT_SECRET` | Signing secret for access tokens (required; strong in production) |
 | `JWT_EXPIRES_IN` | Access token lifetime |

@@ -9,41 +9,47 @@ if (fs.existsSync(envFilePath)) {
   loadEnvFile(envFilePath);
 }
 
+function getDatabaseDialectOptions() {
+  if (process.env.DB_SSL !== 'true') {
+    return {};
+  }
+
+  return {
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
+  };
+}
+
+const baseConfig = {
+  dialect: 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  port: Number(process.env.DB_PORT || 5432),
+  username: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  define: {
+    underscored: true,
+  },
+  ...getDatabaseDialectOptions(),
+};
+
 module.exports = {
   development: {
-    dialect: 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT || 5432),
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
+    ...baseConfig,
     database: process.env.DB_NAME || 'opencurtain_db',
     logging: process.env.DB_LOGGING === 'true',
-    define: {
-      underscored: true,
-    },
   },
   test: {
-    dialect: 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT || 5432),
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
+    ...baseConfig,
     database: process.env.DB_NAME || 'opencurtain_db_test',
     logging: false,
-    define: {
-      underscored: true,
-    },
   },
   production: {
-    dialect: 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT || 5432),
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
+    ...baseConfig,
     database: process.env.DB_NAME || 'opencurtain_db',
     logging: false,
-    define: {
-      underscored: true,
-    },
   },
 };
