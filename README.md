@@ -76,7 +76,9 @@ npm run build
 npm run start:prod
 ```
 
-**Same EC2 as the web app:** `HOST=127.0.0.1` (API reachable via Next rewrites only); `CORS_ORIGIN` and `APP_PUBLIC_URL` = your public HTTPS site URL.
+**Same EC2 as the web app:** `HOST=127.0.0.1`; `CORS_ORIGIN` and `APP_PUBLIC_URL` = your public HTTPS site URL.
+
+**Frontend on Vercel:** `HOST=0.0.0.0`; HTTPS API URL publicly reachable; `CORS_ORIGIN` must list your Vercel URL(s). Frontend sets `NEXT_PUBLIC_API_BASE_URL` to the same API origin.
 
 **Health check:** `GET /api/v1/health` for load balancers and uptime monitors.
 
@@ -91,7 +93,7 @@ Use **one `.env` file** on each machine: `cp .env.example .env` and edit values.
 | `PORT` | HTTP listen port (e.g. `3001`) |
 | `NODE_ENV` | `development` \| `production` \| `test` |
 | `HOST` | Bind address (`0.0.0.0` local; `127.0.0.1` on EC2 when only Next proxies to the API) |
-| `CORS_ORIGIN` | Allowed browser origin (e.g. `http://localhost:3000` or `https://www.yourdomain.com`) |
+| `CORS_ORIGIN` | Allowed browser origin(s); comma-separated for Vercel prod + preview (e.g. `https://app.vercel.app,https://www.yourdomain.com`) |
 | `DB_HOST` | PostgreSQL host |
 | `DB_PORT` | PostgreSQL port |
 | `DB_USER` | Database user |
