@@ -58,7 +58,7 @@ jobs:
             --instance-ids "$EC2_INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --comment "GitHub Deployment" \
-            --parameters '{"commands":["set -e","cd /home/ubuntu/app","git fetch origin","git checkout devops","git pull origin devops","npm ci","npm run build","npm run db:migrate || true","pm2 reload hospital-review-api --update-env","pm2 save"]}' \
+            --parameters '{"commands":["set -e","cd /home/ubuntu/app","git fetch origin","git checkout devops","git pull origin devops","npm ci","npm run db:migrate || true","npm run db:seed","npm run build","pm2 reload hospital-review-api --update-env","pm2 save"]}' \
             --query "Command.CommandId" \
             --output text \
             --region "$AWS_REGION")
