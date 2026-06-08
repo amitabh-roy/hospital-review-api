@@ -1,29 +1,82 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Query,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
+import { ControllerResponse } from '../../common/interfaces/controller-response.interface';
+import { parseHospitalIdFromSlug } from '../../common/utils/hospital-slug.util';
 import {
   GetHospitalByIdSwagger,
+  GetHospitalBySlugSwagger,
+  GetHospitalFiltersSwagger,
+  GetHospitalSearchSwagger,
   GetHospitalsSwagger,
 } from './docs/hospitals.swagger';
-import { HospitalsService } from './hospitals.service';
+import { HospitalDetailResponseDto } from './dto/hospital-detail-response.dto';
+import { HospitalFiltersResponseDto } from './dto/hospital-filters-response.dto';
+import { HospitalsListResponseDto } from './dto/hospitals-list-response.dto';
+import { ListHospitalsQueryDto } from './dto/list-hospitals-query.dto';
+import { SearchHospitalsQueryDto } from './dto/search-hospitals-query.dto';
+import { HOSPITAL_RESPONSE } from './constants/hospital.response';
+import {
+  HospitalFiltersService,
+  HospitalsService,
+} from './hospitals.providers';
 
-/** Hospital listing routes — read-only until persistence layer is added. */
 @ApiTags('Hospitals')
 @Controller('hospitals')
 export class HospitalsController {
-  constructor(private readonly hospitalsService: HospitalsService) {}
+  constructor(
+    private readonly hospitalsService: HospitalsService,
+    private readonly hospitalFiltersService: HospitalFiltersService,
+  ) {}
 
-  /** GET /api/v1/hospitals */
   @Get()
   @GetHospitalsSwagger()
-  findAll() {
-    return this.hospitalsService.findAll();
+  findAll(
+    @Query() query: ListHospitalsQueryDto,
+  ): Promise<ControllerResponse<HospitalsListResponseDto>> {
+    return this.hospitalsService.findAll(query);
   }
 
-  /** GET /api/v1/hospitals/:id */
+  @Get('filters')
+  @GetHospitalFiltersSwagger()
+  getFilters(): Promise<ControllerResponse<HospitalFiltersResponseDto>> {
+    return this.hospitalFiltersService.getFilters();
+  }
+
+  @Get('search')
+  @GetHospitalSearchSwagger()
+  searchHospitals(
+    @Query() query: SearchHospitalsQueryDto,
+  ): Promise<ControllerResponse<HospitalsListResponseDto>> {
+    return this.hospitalsService.searchHospitals(query);
+  }
+
+  @Get('by-slug/:slug')
+  @GetHospitalBySlugSwagger()
+  findBySlug(
+    @Param('slug') slug: string,
+  ): Promise<ControllerResponse<HospitalDetailResponseDto>> {
+    const id = parseHospitalIdFromSlug(slug);
+
+    if (!id) {
+      throw new NotFoundException(HOSPITAL_RESPONSE.NOT_FOUND);
+    }
+
+    return this.hospitalsService.findById(id);
+  }
+
   @Get(':id')
   @GetHospitalByIdSwagger()
-  findOne(@Param('id') id: string) {
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ControllerResponse<HospitalDetailResponseDto>> {
     return this.hospitalsService.findById(id);
   }
 }

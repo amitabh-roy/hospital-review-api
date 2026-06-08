@@ -1,21 +1,63 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { CreateReviewSwagger } from './docs/reviews.swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import {
+  AdminUpdateReviewStatusSwagger,
+  CreateReviewSwagger,
+  GetHospitalReviewsSwagger,
+} from './docs/reviews.swagger';
+import { AdminUpdateReviewStatusDto } from './dto/admin-update-review-status.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { ListHospitalReviewsQueryDto } from './dto/list-hospital-reviews-query.dto';
+import type { AuthenticatedUser } from '../users/interfaces/authenticated-user.interface';
 import { ReviewsService } from './reviews.service';
 
-/** Review submission — one review per mock user per hospital until auth is added. */
 @ApiTags('Reviews')
 @Controller('reviews')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
-  /** POST /api/v1/reviews */
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(JwtAuthGuard)
   @CreateReviewSwagger()
-  create(@Body() dto: CreateReviewDto) {
-    return this.reviewsService.create(dto);
+  create(@Body() dto: CreateReviewDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.reviewsService.create(dto, user);
+  }
+
+  @Get('hospital/:id')
+  @GetHospitalReviewsSwagger()
+  findByHospital(
+    @Param('id', ParseIntPipe) hospitalId: number,
+    @Query() query: ListHospitalReviewsQueryDto,
+  ) {
+    return this.reviewsService.findApprovedByHospital(hospitalId, query);
+  }
+
+  @Patch(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @AdminUpdateReviewStatusSwagger()
+  adminUpdateStatus(
+    @Param('id', ParseIntPipe) reviewId: number,
+    @Body() dto: AdminUpdateReviewStatusDto,
+  ) {
+    return this.reviewsService.adminUpdateStatus(reviewId, dto.status);
   }
 }

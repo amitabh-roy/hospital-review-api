@@ -1,33 +1,112 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 
 import {
   ApiStandardErrorResponses,
   ApiWrappedOkResponse,
 } from '../../../common/docs/swagger.common';
-import { HospitalResponseDto } from '../dto/hospital-response.dto';
+import { HospitalDetailResponseDto } from '../dto/hospital-detail-response.dto';
+import { HospitalFiltersResponseDto } from '../dto/hospital-filters-response.dto';
+import { HospitalsListResponseDto } from '../dto/hospitals-list-response.dto';
 
-export const GetHospitalsSwagger = () =>
-  applyDecorators(
+export function GetHospitalsSwagger(): MethodDecorator {
+  return applyDecorators(
     ApiOperation({
       summary: 'List hospitals',
-      description: 'Returns all hospitals from in-memory mock data.',
+      description:
+        'Returns paginated hospitals with optional city/state/facility/rating filters.',
+    }),
+    ApiQuery({ name: 'page', required: false, example: 1 }),
+    ApiQuery({ name: 'limit', required: false, example: 10 }),
+    ApiQuery({ name: 'city', required: false, example: 'New York' }),
+    ApiQuery({ name: 'state', required: false, example: 'NY' }),
+    ApiQuery({
+      name: 'facilityType',
+      required: false,
+      example: 'General Acute Care',
+    }),
+    ApiQuery({ name: 'minRating', required: false, example: 4 }),
+    ApiQuery({ name: 'maxRating', required: false, example: 5 }),
+    ApiWrappedOkResponse(
+      HospitalsListResponseDto,
+      'Hospitals fetched successfully',
+    ),
+    ApiStandardErrorResponses(),
+  );
+}
+
+export function GetHospitalSearchSwagger(): MethodDecorator {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Search hospitals',
+      description:
+        'Searches hospitals by cmsId, name, city, state, or facility type with the same pagination and filter options as the list endpoint.',
+    }),
+    ApiQuery({ name: 'query', required: true, example: 'Boston' }),
+    ApiQuery({ name: 'page', required: false, example: 1 }),
+    ApiQuery({ name: 'limit', required: false, example: 10 }),
+    ApiQuery({ name: 'city', required: false, example: 'Boston' }),
+    ApiQuery({ name: 'state', required: false, example: 'MA' }),
+    ApiQuery({
+      name: 'facilityType',
+      required: false,
+      example: 'Teaching Hospital',
+    }),
+    ApiQuery({ name: 'minRating', required: false, example: 4 }),
+    ApiQuery({ name: 'maxRating', required: false, example: 5 }),
+    ApiWrappedOkResponse(
+      HospitalsListResponseDto,
+      'Hospital search results fetched successfully',
+    ),
+    ApiStandardErrorResponses(),
+  );
+}
+
+export function GetHospitalByIdSwagger(): MethodDecorator {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Get hospital by ID',
+      description:
+        'Returns a single hospital with its mapped unit definitions and approved review count.',
+    }),
+    ApiParam({ name: 'id', example: 1, description: 'Hospital ID' }),
+    ApiWrappedOkResponse(
+      HospitalDetailResponseDto,
+      'Hospital fetched successfully',
+    ),
+    ApiStandardErrorResponses(),
+  );
+}
+
+export const GetHospitalBySlugSwagger: () => MethodDecorator = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Get hospital by slug',
+      description:
+        'Returns a single hospital using its URL slug (name-id format).',
+    }),
+    ApiParam({
+      name: 'slug',
+      example: 'city-hospital-1',
+      description: 'Hospital slug',
     }),
     ApiWrappedOkResponse(
-      HospitalResponseDto,
-      'Hospitals fetched successfully',
-      true,
+      HospitalDetailResponseDto,
+      'Hospital fetched successfully',
     ),
     ApiStandardErrorResponses(),
   );
 
-export const GetHospitalByIdSwagger = () =>
+export const GetHospitalFiltersSwagger: () => MethodDecorator = () =>
   applyDecorators(
     ApiOperation({
-      summary: 'Get hospital by ID',
-      description: 'Returns a single hospital or 404 if not found.',
+      summary: 'Get hospital filter options',
+      description:
+        'Returns distinct state and facility type values for search filters.',
     }),
-    ApiParam({ name: 'id', example: '1', description: 'Hospital ID' }),
-    ApiWrappedOkResponse(HospitalResponseDto, 'Hospital fetched successfully'),
+    ApiWrappedOkResponse(
+      HospitalFiltersResponseDto,
+      'Hospital filters fetched successfully',
+    ),
     ApiStandardErrorResponses(),
   );

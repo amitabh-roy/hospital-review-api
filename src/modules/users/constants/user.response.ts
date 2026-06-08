@@ -1,0 +1,21 @@
+export const USER_RESPONSE = {
+  SIGNUP_SUCCESS: 'User signed up successfully',
+  LOGIN_SUCCESS: 'User logged in successfully',
+  PROFILE_FETCHED: 'Authenticated user fetched successfully',
+  EMAIL_IN_USE: 'Email is already registered',
+  INVALID_CREDENTIALS: 'Invalid email or password',
+  ROLE_NOT_FOUND: 'Role not found',
+  USER_NOT_FOUND: 'User not found',
+  INVALID_REFRESH_TOKEN: 'Invalid or expired refresh token',
+  INVALID_OR_EXPIRED_TOKEN: 'Invalid or expired token',
+  LOGOUT_SUCCESS: 'Logged out successfully',
+  REFRESH_SUCCESS: 'Token refreshed successfully',
+  EMAIL_VERIFIED: 'Email verified successfully',
+  VERIFICATION_EMAIL_SENT: 'Verification email sent if the account exists',
+  PASSWORD_RESET_EMAIL_SENT: 'Password reset email sent if the account exists',
+  PASSWORD_RESET_SUCCESS: 'Password reset successfully',
+  EMAIL_NOT_VERIFIED:
+    'Email verification is required before submitting reviews',
+  ALREADY_VERIFIED: 'Email is already verified',
+  VERIFICATION_UPDATED: 'User verification status updated',
+} as const;
