@@ -1,64 +1,251 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { getModelToken } from '@nestjs/sequelize';
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { HospitalsService } from '../hospitals/hospitals.service';
+import { HospitalModel } from '../../database/models/hospital.model';
+import { HospitalUnitModel } from '../../database/models/hospital-unit.model';
+import { ReviewModel } from '../../database/models/review.model';
 import { REVIEW_RESPONSE } from './constants/review.response';
 import { ReviewsService } from './reviews.service';
 
 describe('ReviewsService', () => {
   let service: ReviewsService;
-
-  const hospitalsService = {
-    exists: jest.fn(),
+  const reviewModel = {
+    findOne: jest.fn(),
+    create: jest.fn(),
+    findByPk: jest.fn(),
+    findAndCountAll: jest.fn(),
+  };
+  const hospitalModel = {
+    findByPk: jest.fn(),
+  };
+  const hospitalUnitModel = {
+    findOne: jest.fn(),
+  };
+  const authenticatedUser = {
+    id: 1,
+    fullName: 'Taylor Brooks',
+    email: 'taylor@example.com',
+    roleId: 1,
+    roleName: 'nurse',
+    isVerified: true,
+    verificationStatus: 'verified' as const,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReviewsService,
-        { provide: HospitalsService, useValue: hospitalsService },
+        { provide: getModelToken(ReviewModel), useValue: reviewModel },
+        { provide: getModelToken(HospitalModel), useValue: hospitalModel },
+        {
+          provide: getModelToken(HospitalUnitModel),
+          useValue: hospitalUnitModel,
+        },
       ],
     }).compile();
 
     service = module.get<ReviewsService>(ReviewsService);
-    hospitalsService.exists.mockReset();
+    reviewModel.findOne.mockReset();
+    reviewModel.create.mockReset();
+    reviewModel.findByPk.mockReset();
+    reviewModel.findAndCountAll.mockReset();
+    hospitalModel.findByPk.mockReset();
+    hospitalUnitModel.findOne.mockReset();
   });
 
-  it('should create a review for a valid hospital', () => {
-    hospitalsService.exists.mockReturnValue(true);
-
-    const result = service.create({
-      hospitalId: '2',
+  it('should create a review for a valid hospital', async () => {
+    hospitalModel.findByPk.mockResolvedValue({ id: 2 });
+    hospitalUnitModel.findOne.mockResolvedValue({
+      hospitalId: 2,
+      unitId: 3,
+      unit: {
+        id: 3,
+        name: 'Telemetry',
+      },
+    });
+    reviewModel.findOne.mockResolvedValue(null);
+    reviewModel.create.mockResolvedValue({ id: 10 });
+    reviewModel.findByPk.mockResolvedValue({
+      id: 10,
+      hospitalId: 2,
+      unitId: 3,
+      userId: 1,
+      roleId: 1,
       rating: 4,
       comment: 'Good experience',
+      employmentType: 'full_time',
+      shiftType: 'day',
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      unit: { name: 'Telemetry' },
+      user: { fullName: 'Taylor Brooks' },
+      role: { name: 'nurse' },
     });
 
+    const result = await service.create(
+      {
+        hospitalId: 2,
+        unitId: 3,
+        rating: 4,
+        comment: 'Good experience',
+        employmentType: 'full_time',
+        shiftType: 'day',
+        hourlyRate: 45,
+        patientRatio: '5–6',
+        mealBreaks: 'Usually',
+        bathroomBreaks: 'Sometimes',
+        parkingCost: 'Free',
+        managementRating: 4,
+        wouldReturn: true,
+      },
+      authenticatedUser,
+    );
+
+    expect(reviewModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hourlyRate: 45,
+        patientRatio: '5–6',
+        mealBreaks: 'Usually',
+        bathroomBreaks: 'Sometimes',
+        parkingCost: 'Free',
+        managementRating: 4,
+        wouldReturn: true,
+      }),
+    );
     expect(result.message).toBe(REVIEW_RESPONSE.CREATED);
-    expect(result.data.hospitalId).toBe('2');
+    expect(result.data.hospitalId).toBe(2);
     expect(result.data.rating).toBe(4);
   });
 
-  it('should throw when hospital does not exist', () => {
-    hospitalsService.exists.mockReturnValue(false);
+  it('should throw when hospital does not exist', async () => {
+    hospitalModel.findByPk.mockResolvedValue(null);
 
-    expect(() =>
-      service.create({
-        hospitalId: 'missing',
-        rating: 5,
-        comment: 'Test',
-      }),
-    ).toThrow(NotFoundException);
+    await expect(
+      service.create(
+        {
+          hospitalId: 999,
+          unitId: 3,
+          rating: 5,
+          comment: 'Test',
+          employmentType: 'full_time',
+          shiftType: 'day',
+        },
+        authenticatedUser,
+      ),
+    ).rejects.toThrow(NotFoundException);
   });
 
-  it('should reject duplicate review for same hospital and mock user', () => {
-    hospitalsService.exists.mockReturnValue(true);
+  it('should reject duplicate review for the same user and hospital', async () => {
+    hospitalModel.findByPk.mockResolvedValue({ id: 1 });
+    hospitalUnitModel.findOne.mockResolvedValue({
+      hospitalId: 1,
+      unitId: 1,
+      unit: { id: 1, name: 'ICU' },
+    });
+    reviewModel.findOne.mockResolvedValue({ id: 1 });
 
-    expect(() =>
-      service.create({
-        hospitalId: '1',
-        rating: 5,
-        comment: 'Duplicate attempt',
-      }),
-    ).toThrow(BadRequestException);
+    await expect(
+      service.create(
+        {
+          hospitalId: 1,
+          unitId: 1,
+          rating: 5,
+          comment: 'Duplicate attempt',
+          employmentType: 'contract',
+          shiftType: 'night',
+        },
+        authenticatedUser,
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should return approved reviews for a hospital', async () => {
+    hospitalModel.findByPk.mockResolvedValue({ id: 1 });
+    reviewModel.findAndCountAll.mockResolvedValue({
+      rows: [
+        {
+          id: 1,
+          hospitalId: 1,
+          unitId: 1,
+          userId: 1,
+          roleId: 1,
+          rating: 5,
+          comment: 'Excellent team support',
+          employmentType: 'full_time',
+          shiftType: 'day',
+          status: 'approved',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          unit: { name: 'ICU' },
+          user: { fullName: 'Taylor Brooks' },
+          role: { name: 'nurse' },
+        },
+      ],
+      count: 1,
+    });
+
+    const result = await service.findApprovedByHospital(1, {
+      page: 1,
+      limit: 10,
+    });
+
+    expect(result.message).toBe(REVIEW_RESPONSE.FETCH_BY_HOSPITAL);
+    expect(result.data.items).toHaveLength(1);
+    expect(result.data.pagination.total).toBe(1);
+  });
+
+  it('should wrap unexpected database errors while creating a review', async () => {
+    hospitalModel.findByPk.mockResolvedValue({ id: 2 });
+    hospitalUnitModel.findOne.mockResolvedValue({
+      hospitalId: 2,
+      unitId: 3,
+      unit: {
+        id: 3,
+        name: 'Telemetry',
+      },
+    });
+    reviewModel.findOne.mockResolvedValue(null);
+    reviewModel.create.mockRejectedValue(new Error('database down'));
+
+    await expect(
+      service.create(
+        {
+          hospitalId: 2,
+          unitId: 3,
+          rating: 4,
+          comment: 'Good experience',
+          employmentType: 'full_time',
+          shiftType: 'day',
+        },
+        authenticatedUser,
+      ),
+    ).rejects.toThrow(InternalServerErrorException);
+  });
+
+  it('should reject units that are not mapped to the selected hospital', async () => {
+    hospitalModel.findByPk.mockResolvedValue({ id: 2 });
+    hospitalUnitModel.findOne.mockResolvedValue(null);
+
+    await expect(
+      service.create(
+        {
+          hospitalId: 2,
+          unitId: 1,
+          rating: 4,
+          comment: 'Wrong unit mapping',
+          employmentType: 'full_time',
+          shiftType: 'day',
+        },
+        authenticatedUser,
+      ),
+    ).rejects.toThrow(NotFoundException);
   });
 });

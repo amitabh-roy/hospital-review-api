@@ -8,6 +8,7 @@ describe('ReviewsController', () => {
 
   const reviewsService = {
     create: jest.fn(),
+    findApprovedByHospital: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -19,12 +20,37 @@ describe('ReviewsController', () => {
     controller = module.get<ReviewsController>(ReviewsController);
   });
 
-  it('should delegate create to service', () => {
-    const dto = { hospitalId: '2', rating: 4, comment: 'Nice' };
+  it('should delegate create to service', async () => {
+    const dto = {
+      hospitalId: 2,
+      unitId: 1,
+      rating: 4,
+      comment: 'Nice',
+      employmentType: 'full_time',
+      shiftType: 'day',
+    };
+    const user = { id: 1, roleId: 1 };
+
     reviewsService.create.mockReturnValue({ message: 'ok', data: {} });
 
-    controller.create(dto);
+    await controller.create(dto, user as never);
 
-    expect(reviewsService.create).toHaveBeenCalledWith(dto);
+    expect(reviewsService.create).toHaveBeenCalledWith(dto, user);
+  });
+
+  it('should delegate hospital review listing to service', async () => {
+    const query = { page: 1, limit: 10 };
+
+    reviewsService.findApprovedByHospital.mockReturnValue({
+      message: 'ok',
+      data: {},
+    });
+
+    await controller.findByHospital(1, query);
+
+    expect(reviewsService.findApprovedByHospital).toHaveBeenCalledWith(
+      1,
+      query,
+    );
   });
 });
