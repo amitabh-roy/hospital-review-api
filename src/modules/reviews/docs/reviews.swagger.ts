@@ -75,7 +75,7 @@ export const AdminUpdateReviewStatusSwagger = () =>
     ApiOperation({
       summary: 'Admin: approve or reject a review',
       description:
-        'Updates review status (pending, approved, rejected). Requires an **admin** JWT — use **Authorize** (top right) after logging in via `POST /auth/login` with `admin@example.com` / `Password@123` (seeded dev account). Paste only the `accessToken` value from the login response `data` object.',
+        'Updates review status (pending, approved, rejected). Requires an **admin** JWT — use **Authorize** (top right) after logging in via `POST /auth/login` with the seeded admin account and your local `SEED_DEV_PASSWORD`. Paste only the `accessToken` value from the login response `data` object.',
     }),
     ApiParam({
       name: 'id',

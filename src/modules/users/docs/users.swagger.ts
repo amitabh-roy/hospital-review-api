@@ -36,7 +36,7 @@ export const SignupSwagger = () =>
           value: {
             fullName: 'Taylor Brooks',
             email: 'taylor.brooks@example.com',
-            password: 'Password@123',
+            password: 'your-password',
             occupation: 'Registered Nurse (RN)',
           },
         },
@@ -63,14 +63,14 @@ export const LoginSwagger = () =>
           summary: 'Seeded user login',
           value: {
             email: 'taylor.brooks@example.com',
-            password: 'Password@123',
+            password: 'your-password',
           },
         },
         admin: {
           summary: 'Seeded admin (for review approval)',
           value: {
             email: 'admin@example.com',
-            password: 'Password@123',
+            password: 'your-password',
           },
         },
       },

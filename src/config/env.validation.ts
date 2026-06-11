@@ -11,6 +11,8 @@ import {
   validateSync,
 } from 'class-validator';
 
+import { isInsecureJwtSecret } from './insecure-jwt-secret.util';
+
 enum Environment {
   Development = 'development',
   Production = 'production',
@@ -94,11 +96,6 @@ class EnvironmentVariables {
   BCRYPT_SALT_ROUNDS?: number;
 }
 
-const INSECURE_JWT_SECRETS = new Set([
-  'change-me-in-production',
-  'hospital-reviews-secret-key',
-]);
-
 export function validate(
   config: Record<string, unknown>,
 ): EnvironmentVariables {
@@ -119,7 +116,7 @@ export function validate(
   const jwtSecret = validated.JWT_SECRET;
 
   if (nodeEnv === Environment.Production) {
-    if (!jwtSecret || INSECURE_JWT_SECRETS.has(jwtSecret)) {
+    if (isInsecureJwtSecret(jwtSecret)) {
       throw new Error(
         'JWT_SECRET must be set to a strong unique value in production',
       );

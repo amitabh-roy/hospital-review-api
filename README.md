@@ -53,7 +53,7 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env`: set database credentials and a strong `JWT_SECRET` (required for auth).
+Edit `.env`: set database credentials, a strong `JWT_SECRET` (required for auth), and `SEED_DEV_PASSWORD` for local `db:seed`.
 
 ```bash
 npm run db:migrate
@@ -108,6 +108,7 @@ Use **one `.env` file** on each machine: `cp .env.example .env` and edit values.
 | `PASSWORD_RESET_EXPIRES_IN` | Password reset token TTL |
 | `APP_PUBLIC_URL` | Frontend base URL for email links |
 | `BCRYPT_SALT_ROUNDS` | bcrypt cost factor |
+| `SEED_DEV_PASSWORD` | Local-only password used by `npm run db:seed` for development users |
 
 **Architecture:** See [ARCHITECTURE.md](./ARCHITECTURE.md) for folder conventions, request flow, and database/auth design.
 
@@ -202,14 +203,14 @@ curl -X POST http://localhost:3001/api/v1/auth/signup \
   -d '{
     "fullName": "Taylor Brooks",
     "email": "taylor.brooks@example.com",
-    "password": "Password@123",
+    "password": "your-password",
     "occupation": "Registered Nurse (RN)"
   }'
 
 # Login
 curl -X POST http://localhost:3001/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"taylor.brooks@example.com","password":"Password@123"}'
+  -d '{"email":"taylor.brooks@example.com","password":"your-password"}'
 
 # Search hospitals
 curl "http://localhost:3001/api/v1/hospitals/search?query=Boston&page=1&limit=10"
