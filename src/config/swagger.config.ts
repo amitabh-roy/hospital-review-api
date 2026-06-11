@@ -14,7 +14,7 @@ export function setupSwagger(app: INestApplication): void {
         '1. Call `POST /api/v1/auth/login` (expand **Auth** → **login**).\n' +
         '2. Copy `data.accessToken` from the response (not `refreshToken`).\n' +
         '3. Click **Authorize** (lock icon, top right), paste the token only, then **Authorize** again.\n' +
-        '4. Admin-only routes (e.g. `PATCH /reviews/{id}/status`) require the seeded admin: `admin@example.com` / `Password@123`.',
+        '4. Admin-only routes (e.g. `PATCH /reviews/{id}/status`) require the seeded admin account (`admin@example.com`) using the password from your local `SEED_DEV_PASSWORD`.',
     )
     .setVersion('1.0')
     .addTag('Health')

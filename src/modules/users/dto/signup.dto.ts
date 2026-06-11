@@ -25,7 +25,7 @@ export class SignupDto {
   email: string;
 
   @ApiProperty({
-    example: 'Password@123',
+    example: 'your-password',
     minLength: 8,
     description: 'Plain password that will be stored as a bcrypt hash',
   })
