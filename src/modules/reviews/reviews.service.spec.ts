@@ -22,6 +22,7 @@ describe('ReviewsService', () => {
   };
   const hospitalModel = {
     findByPk: jest.fn(),
+    update: jest.fn(),
   };
   const hospitalUnitModel = {
     findOne: jest.fn(),
@@ -57,6 +58,7 @@ describe('ReviewsService', () => {
     reviewModel.findByPk.mockReset();
     reviewModel.findAndCountAll.mockReset();
     hospitalModel.findByPk.mockReset();
+    hospitalModel.update.mockReset();
     hospitalUnitModel.findOne.mockReset();
   });
 
@@ -70,7 +72,9 @@ describe('ReviewsService', () => {
         name: 'Telemetry',
       },
     });
-    reviewModel.findOne.mockResolvedValue(null);
+    reviewModel.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ avgRating: '4' });
     reviewModel.create.mockResolvedValue({ id: 10 });
     reviewModel.findByPk.mockResolvedValue({
       id: 10,
@@ -82,13 +86,14 @@ describe('ReviewsService', () => {
       comment: 'Good experience',
       employmentType: 'full_time',
       shiftType: 'day',
-      status: 'pending',
+      status: 'approved',
       createdAt: new Date(),
       updatedAt: new Date(),
       unit: { name: 'Telemetry' },
       user: { fullName: 'Taylor Brooks' },
       role: { name: 'nurse' },
     });
+    hospitalModel.update.mockResolvedValue([1]);
 
     const result = await service.create(
       {
@@ -111,6 +116,7 @@ describe('ReviewsService', () => {
 
     expect(reviewModel.create).toHaveBeenCalledWith(
       expect.objectContaining({
+        status: 'approved',
         hourlyRate: 45,
         patientRatio: '5–6',
         mealBreaks: 'Usually',

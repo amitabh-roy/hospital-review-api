@@ -1,6 +1,7 @@
 export const REVIEW_RESPONSE: Record<string, string> = {
   CREATED: 'Review submitted successfully',
   FETCH_BY_HOSPITAL: 'Hospital reviews fetched successfully',
+  FETCH_MY_REVIEWS: 'Your reviews fetched successfully',
   UPDATED: 'Review status updated successfully',
   HOSPITAL_NOT_FOUND: 'Hospital not found',
   UNIT_NOT_FOUND: 'Unit not found for the selected hospital',

@@ -162,8 +162,9 @@ List/search query params: `page`, `limit`, `city`, `state`, `facilityType`, `min
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `POST` | `/api/v1/reviews` | Bearer | Submit review (`userId` / `roleId` from JWT; `unitId` must exist on hospital) |
+| `GET` | `/api/v1/reviews/me` | Bearer | List reviews submitted by the current user |
 | `GET` | `/api/v1/reviews/hospital/:id` | No | Paginated approved reviews for a hospital |
-| `PATCH` | `/api/v1/reviews/:id/status` | Bearer (admin) | Approve or reject a pending review |
+| `PATCH` | `/api/v1/reviews/:id/status` | Bearer (admin) | Approve or reject a review |
 
 #### Create review body (authenticated)
 
@@ -186,7 +187,8 @@ Optional fields: `hourlyRate`, `patientRatio`, `mealBreaks`, `bathroomBreaks`, `
 - `unitId` must be linked to that hospital in `hospital_units`
 - `rating` is 1–5 (integer)
 - One review per user per hospital (DB unique index + service check)
-- New reviews start as `pending` until an admin approves them
+- New reviews are created as `approved` and update hospital aggregates immediately
+- Admins can still change review status later via `PATCH /reviews/:id/status`
 
 ### Example requests
 

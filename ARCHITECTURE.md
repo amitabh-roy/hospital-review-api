@@ -128,7 +128,7 @@ Core relationships for Milestone 1:
 
 Unique constraint: one review per `(hospital_id, user_id)`.
 
-Reviews are created as `pending`; public hospital review lists filter to `approved`.
+Reviews are created as `approved` and update hospital aggregates immediately; public hospital review lists filter to `approved`. Admins can change status via `PATCH /reviews/:id/status`.
 
 ---
 

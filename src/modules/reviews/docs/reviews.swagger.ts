@@ -25,7 +25,7 @@ export const CreateReviewSwagger = () =>
     ApiOperation({
       summary: 'Submit a hospital review',
       description:
-        'Creates a pending review for an authenticated user. The userId and roleId are resolved from the JWT token, and the selected unit must be mapped to the selected hospital.',
+        'Creates an approved review for an authenticated user. The userId and roleId are resolved from the JWT token, and the selected unit must be mapped to the selected hospital.',
     }),
     ApiBody({
       type: CreateReviewDto,
@@ -136,9 +136,36 @@ export const GetHospitalReviewsSwagger = () =>
     ApiParam({ name: 'id', example: 1, description: 'Hospital ID' }),
     ApiQuery({ name: 'page', required: false, example: 1 }),
     ApiQuery({ name: 'limit', required: false, example: 10 }),
+    ApiQuery({ name: 'roleId', required: false, example: 1 }),
+    ApiQuery({ name: 'unitId', required: false, example: 1 }),
     ApiWrappedOkResponse(
       HospitalReviewsResponseDto,
       'Hospital reviews fetched successfully',
     ),
+    ApiStandardErrorResponses(),
+  );
+
+export const GetMyReviewsSwagger = () =>
+  applyDecorators(
+    ApiBearerAuth('bearer'),
+    ApiOperation({
+      summary: 'List reviews submitted by the current user',
+    }),
+    ApiWrappedOkResponse(
+      HospitalReviewsResponseDto,
+      'Your reviews fetched successfully',
+    ),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid JWT token',
+      schema: {
+        example: {
+          status: false,
+          statusCode: 401,
+          message: 'Unauthorized',
+          errors: [],
+          data: null,
+        },
+      },
+    }),
     ApiStandardErrorResponses(),
   );

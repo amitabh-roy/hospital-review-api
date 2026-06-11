@@ -7,6 +7,9 @@ export class ReviewResponseDto {
   @ApiProperty({ example: 1 })
   hospitalId: number;
 
+  @ApiPropertyOptional({ example: 'Jackson Memorial Hospital' })
+  hospitalName?: string;
+
   @ApiProperty({
     example: 1,
     description: 'Reusable unit definition ID mapped to the reviewed hospital',
@@ -34,7 +37,7 @@ export class ReviewResponseDto {
   @ApiProperty({ example: 'day' })
   shiftType: string;
 
-  @ApiProperty({ example: 'pending' })
+  @ApiProperty({ example: 'approved' })
   status: string;
 
   @ApiProperty({ example: '2025-05-22T12:00:00.000Z' })

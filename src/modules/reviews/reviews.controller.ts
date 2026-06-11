@@ -21,6 +21,7 @@ import {
   AdminUpdateReviewStatusSwagger,
   CreateReviewSwagger,
   GetHospitalReviewsSwagger,
+  GetMyReviewsSwagger,
 } from './docs/reviews.swagger';
 import { AdminUpdateReviewStatusDto } from './dto/admin-update-review-status.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -39,6 +40,13 @@ export class ReviewsController {
   @CreateReviewSwagger()
   create(@Body() dto: CreateReviewDto, @CurrentUser() user: AuthenticatedUser) {
     return this.reviewsService.create(dto, user);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @GetMyReviewsSwagger()
+  findMine(@CurrentUser() user: AuthenticatedUser) {
+    return this.reviewsService.findByCurrentUser(user);
   }
 
   @Get('hospital/:id')

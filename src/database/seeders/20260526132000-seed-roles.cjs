@@ -2,7 +2,7 @@
 
 const HEALTHCARE_ROLES = [
   'Advanced Practice RN / NP (APRN)',
-  'Certified Nursing Assistant (CNA)',
+  'Nursing Assistant (CNA) / Patient Care Tech (PCT)',
   'Dietitian',
   'Licensed Practical Nurse (LPN)',
   'Medical Assistant (MA)',
