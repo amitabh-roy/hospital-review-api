@@ -17,4 +17,18 @@ export class ListHospitalReviewsQueryDto {
   @Min(1)
   @Max(50)
   limit?: number = 10;
+
+  @ApiPropertyOptional({ example: 1, description: 'Filter by reviewer role ID' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  roleId?: number;
+
+  @ApiPropertyOptional({ example: 1, description: 'Filter by unit ID' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  unitId?: number;
 }

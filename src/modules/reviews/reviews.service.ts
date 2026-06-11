@@ -69,7 +69,7 @@ export class ReviewsService {
         comment: dto.comment.trim(),
         employmentType: dto.employmentType.trim().toLowerCase(),
         shiftType: dto.shiftType.trim().toLowerCase(),
-        status: 'pending',
+        status: 'approved',
         hourlyRate: dto.hourlyRate ?? null,
         patientRatio: dto.patientRatio?.trim() || null,
         mealBreaks: dto.mealBreaks?.trim() || null,
@@ -86,6 +86,8 @@ export class ReviewsService {
       if (!review) {
         throw new NotFoundException(REVIEW_RESPONSE.NOT_FOUND);
       }
+
+      await this.syncHospitalAverageRating(dto.hospitalId);
 
       return {
         message: REVIEW_RESPONSE.CREATED,
@@ -117,8 +119,21 @@ export class ReviewsService {
       const limit = query.limit ?? 10;
       const offset = (page - 1) * limit;
 
+      const where: Record<string, unknown> = {
+        hospitalId,
+        status: 'approved',
+      };
+
+      if (query.roleId) {
+        where.roleId = query.roleId;
+      }
+
+      if (query.unitId) {
+        where.unitId = query.unitId;
+      }
+
       const { rows, count } = await this.reviewModel.findAndCountAll({
-        where: { hospitalId, status: 'approved' },
+        where,
         include: [UnitModel, UserModel, RoleModel],
         order: [['createdAt', 'DESC']],
         limit,
@@ -142,6 +157,30 @@ export class ReviewsService {
       handleDatabaseException(error, {
         context: ReviewsService.name,
         operation: 'hospital review listing',
+      });
+    }
+  }
+
+  async findByCurrentUser(
+    user: AuthenticatedUser,
+  ): Promise<ControllerResponse<{ items: ReviewResponseDto[] }>> {
+    try {
+      const reviews = await this.reviewModel.findAll({
+        where: { userId: user.id },
+        include: [UnitModel, UserModel, RoleModel, HospitalModel],
+        order: [['createdAt', 'DESC']],
+      });
+
+      return {
+        message: REVIEW_RESPONSE.FETCH_MY_REVIEWS,
+        data: {
+          items: reviews.map((review) => this.toReviewResponse(review)),
+        },
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: ReviewsService.name,
+        operation: 'current user review listing',
       });
     }
   }
@@ -199,6 +238,7 @@ export class ReviewsService {
     return {
       id: review.id,
       hospitalId: review.hospitalId,
+      hospitalName: review.hospital?.name,
       unitId: review.unitId,
       unitName: review.unit?.name ?? '',
       roleId: review.roleId,
