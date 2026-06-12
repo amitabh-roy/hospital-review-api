@@ -16,7 +16,7 @@ export class VerifiedUserGuard implements CanActivate {
       .getRequest<{ user?: AuthenticatedUser }>();
     const user = request.user;
 
-    if (!user || (user.verificationStatus !== 'verified' && !user.isVerified)) {
+    if (!user || user.verificationStatus !== 'verified') {
       throw new ForbiddenException(USER_RESPONSE.EMAIL_NOT_VERIFIED);
     }
 

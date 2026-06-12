@@ -9,11 +9,14 @@ import { ReviewModel } from '../../database/models/review.model';
 import { RoleModel } from '../../database/models/role.model';
 import { UnitModel } from '../../database/models/unit.model';
 import { UserModel } from '../../database/models/user.model';
+import { VerificationSubmissionModel } from '../../database/models/verification-submission.model';
+import { UsersModule } from '../users/users.module';
 import { ReviewsController } from './reviews.controller';
 import { ReviewsService } from './reviews.service';
 
 @Module({
   imports: [
+    UsersModule,
     SequelizeModule.forFeature([
       ReviewModel,
       HospitalModel,
@@ -21,6 +24,7 @@ import { ReviewsService } from './reviews.service';
       UnitModel,
       UserModel,
       RoleModel,
+      VerificationSubmissionModel,
     ]),
   ],
   controllers: [ReviewsController],

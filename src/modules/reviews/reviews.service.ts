@@ -14,11 +14,14 @@ import { ReviewModel } from '../../database/models/review.model';
 import { RoleModel } from '../../database/models/role.model';
 import { UnitModel } from '../../database/models/unit.model';
 import { UserModel } from '../../database/models/user.model';
+import { VerificationSubmissionModel } from '../../database/models/verification-submission.model';
 import { REVIEW_RESPONSE } from './constants/review.response';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { resolveReviewRoleId } from './utils/resolve-review-role.util';
 import { HospitalReviewsResponseDto } from './dto/hospital-reviews-response.dto';
 import { ListHospitalReviewsQueryDto } from './dto/list-hospital-reviews-query.dto';
 import { ReviewResponseDto } from './dto/review-response.dto';
+import { EmailService } from '../users/email.service';
 import { AuthenticatedUser } from '../users/interfaces/authenticated-user.interface';
 
 @Injectable()
@@ -30,6 +33,11 @@ export class ReviewsService {
     private readonly hospitalModel: typeof HospitalModel,
     @InjectModel(HospitalUnitModel)
     private readonly hospitalUnitModel: typeof HospitalUnitModel,
+    @InjectModel(RoleModel)
+    private readonly roleModel: typeof RoleModel,
+    @InjectModel(VerificationSubmissionModel)
+    private readonly verificationSubmissionModel: typeof VerificationSubmissionModel,
+    private readonly emailService: EmailService,
   ) {}
 
   async create(
@@ -60,16 +68,32 @@ export class ReviewsService {
         throw new BadRequestException(REVIEW_RESPONSE.DUPLICATE_REVIEW);
       }
 
+      if (user.verificationStatus !== 'verified') {
+        const pendingVerification = await this.verificationSubmissionModel.findOne({
+          where: { userId: user.id, status: 'pending' },
+        });
+
+        if (!pendingVerification) {
+          throw new BadRequestException(REVIEW_RESPONSE.VERIFICATION_REQUIRED);
+        }
+      }
+
+      const roleId = await resolveReviewRoleId(
+        this.roleModel,
+        dto.roleName,
+        user.roleId,
+      );
+
       const createdReview = await this.reviewModel.create({
         hospitalId: dto.hospitalId,
         unitId: dto.unitId,
         userId: user.id,
-        roleId: user.roleId,
+        roleId,
         rating: dto.rating,
         comment: dto.comment.trim(),
         employmentType: dto.employmentType.trim().toLowerCase(),
         shiftType: dto.shiftType.trim().toLowerCase(),
-        status: 'approved',
+        status: 'pending',
         hourlyRate: dto.hourlyRate ?? null,
         patientRatio: dto.patientRatio?.trim() || null,
         mealBreaks: dto.mealBreaks?.trim() || null,
@@ -87,7 +111,7 @@ export class ReviewsService {
         throw new NotFoundException(REVIEW_RESPONSE.NOT_FOUND);
       }
 
-      await this.syncHospitalAverageRating(dto.hospitalId);
+      this.emailService.sendReviewSubmittedEmail(user.email, hospital.name);
 
       return {
         message: REVIEW_RESPONSE.CREATED,
@@ -185,6 +209,36 @@ export class ReviewsService {
     }
   }
 
+  async findForAdmin(
+    status?: ReviewModel['status'],
+  ): Promise<ControllerResponse<{ items: ReviewResponseDto[] }>> {
+    try {
+      const where: Record<string, unknown> = {};
+
+      if (status) {
+        where.status = status;
+      }
+
+      const reviews = await this.reviewModel.findAll({
+        where,
+        include: [UnitModel, UserModel, RoleModel, HospitalModel],
+        order: [['createdAt', 'DESC']],
+      });
+
+      return {
+        message: REVIEW_RESPONSE.FETCH_ADMIN_REVIEWS,
+        data: {
+          items: reviews.map((review) => this.toReviewResponse(review)),
+        },
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: ReviewsService.name,
+        operation: 'admin review listing',
+      });
+    }
+  }
+
   async adminUpdateStatus(
     reviewId: number,
     status: ReviewModel['status'],
@@ -193,7 +247,7 @@ export class ReviewsService {
       const review: ReviewModel | null = await this.reviewModel.findByPk(
         reviewId,
         {
-          include: [UnitModel, UserModel, RoleModel],
+          include: [UnitModel, UserModel, RoleModel, HospitalModel],
         },
       );
 
@@ -201,11 +255,27 @@ export class ReviewsService {
         throw new NotFoundException(REVIEW_RESPONSE.NOT_FOUND);
       }
 
+      const previousStatus = review.status;
       await review.update({ status });
 
       await this.syncHospitalAverageRating(review.hospitalId);
 
-      const message = REVIEW_RESPONSE.UPDATED;
+      if (review.user?.email && previousStatus !== status) {
+        const hospitalName = review.hospital?.name ?? '';
+
+        if (status === 'approved') {
+          this.emailService.sendReviewApprovedEmail(review.user.email, hospitalName);
+        } else if (status === 'rejected') {
+          this.emailService.sendReviewRejectedEmail(review.user.email, hospitalName);
+        }
+      }
+
+      const message =
+        status === 'approved'
+          ? REVIEW_RESPONSE.APPROVED
+          : status === 'rejected'
+            ? REVIEW_RESPONSE.REJECTED
+            : REVIEW_RESPONSE.UPDATED;
 
       return {
         message,

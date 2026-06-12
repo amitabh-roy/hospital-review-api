@@ -9,6 +9,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { HospitalModel } from '../../database/models/hospital.model';
 import { HospitalUnitModel } from '../../database/models/hospital-unit.model';
 import { ReviewModel } from '../../database/models/review.model';
+import { RoleModel } from '../../database/models/role.model';
+import { VerificationSubmissionModel } from '../../database/models/verification-submission.model';
+import { EmailService } from '../users/email.service';
 import { REVIEW_RESPONSE } from './constants/review.response';
 import { ReviewsService } from './reviews.service';
 
@@ -26,6 +29,17 @@ describe('ReviewsService', () => {
   };
   const hospitalUnitModel = {
     findOne: jest.fn(),
+  };
+  const roleModel = {
+    findOne: jest.fn(),
+  };
+  const verificationSubmissionModel = {
+    findOne: jest.fn(),
+  };
+  const emailService = {
+    sendReviewSubmittedEmail: jest.fn(),
+    sendReviewApprovedEmail: jest.fn(),
+    sendReviewRejectedEmail: jest.fn(),
   };
   const authenticatedUser = {
     id: 1,
@@ -49,6 +63,12 @@ describe('ReviewsService', () => {
           provide: getModelToken(HospitalUnitModel),
           useValue: hospitalUnitModel,
         },
+        { provide: getModelToken(RoleModel), useValue: roleModel },
+        {
+          provide: getModelToken(VerificationSubmissionModel),
+          useValue: verificationSubmissionModel,
+        },
+        { provide: EmailService, useValue: emailService },
       ],
     }).compile();
 
@@ -60,10 +80,12 @@ describe('ReviewsService', () => {
     hospitalModel.findByPk.mockReset();
     hospitalModel.update.mockReset();
     hospitalUnitModel.findOne.mockReset();
+    roleModel.findOne.mockReset();
+    verificationSubmissionModel.findOne.mockReset();
   });
 
   it('should create a review for a valid hospital', async () => {
-    hospitalModel.findByPk.mockResolvedValue({ id: 2 });
+    hospitalModel.findByPk.mockResolvedValue({ id: 2, name: 'Test Hospital' });
     hospitalUnitModel.findOne.mockResolvedValue({
       hospitalId: 2,
       unitId: 3,
@@ -86,7 +108,7 @@ describe('ReviewsService', () => {
       comment: 'Good experience',
       employmentType: 'full_time',
       shiftType: 'day',
-      status: 'approved',
+      status: 'pending',
       createdAt: new Date(),
       updatedAt: new Date(),
       unit: { name: 'Telemetry' },
@@ -116,7 +138,7 @@ describe('ReviewsService', () => {
 
     expect(reviewModel.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        status: 'approved',
+        status: 'pending',
         hourlyRate: 45,
         patientRatio: '5–6',
         mealBreaks: 'Usually',
@@ -129,6 +151,34 @@ describe('ReviewsService', () => {
     expect(result.message).toBe(REVIEW_RESPONSE.CREATED);
     expect(result.data.hospitalId).toBe(2);
     expect(result.data.rating).toBe(4);
+  });
+
+  it('should require credential verification before creating a review', async () => {
+    hospitalModel.findByPk.mockResolvedValue({ id: 2, name: 'Test Hospital' });
+    hospitalUnitModel.findOne.mockResolvedValue({
+      hospitalId: 2,
+      unitId: 3,
+      unit: { id: 3, name: 'Telemetry' },
+    });
+    reviewModel.findOne.mockResolvedValue(null);
+    verificationSubmissionModel.findOne.mockResolvedValue(null);
+
+    await expect(
+      service.create(
+        {
+          hospitalId: 2,
+          unitId: 3,
+          rating: 4,
+          comment: 'Good experience',
+          employmentType: 'full_time',
+          shiftType: 'day',
+        },
+        {
+          ...authenticatedUser,
+          verificationStatus: 'pending',
+        },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('should throw when hospital does not exist', async () => {
@@ -187,7 +237,7 @@ describe('ReviewsService', () => {
           comment: 'Excellent team support',
           employmentType: 'full_time',
           shiftType: 'day',
-          status: 'approved',
+          status: 'pending',
           createdAt: new Date(),
           updatedAt: new Date(),
           unit: { name: 'ICU' },

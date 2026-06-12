@@ -110,4 +110,14 @@ export class CreateReviewDto {
   @IsOptional()
   @IsBoolean()
   wouldReturn?: boolean;
+
+  @ApiPropertyOptional({
+    example: 'Registered Nurse (RN)',
+    description:
+      'Occupation selected during review submission; used to categorize the review role',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  roleName?: string;
 }

@@ -78,6 +78,10 @@ export class UsersService {
       }
 
       await this.sendVerificationEmail(persistedUser);
+      this.emailService.sendWelcomeEmail(
+        persistedUser.email,
+        persistedUser.fullName,
+      );
 
       return {
         message: USER_RESPONSE.SIGNUP_SUCCESS,
@@ -183,7 +187,6 @@ export class UsersService {
 
       await user.update({
         isVerified: true,
-        verificationStatus: 'verified',
       });
 
       const updated = await this.userModel.findByPk(user.id, {

@@ -49,6 +49,15 @@ export class ReviewsController {
     return this.reviewsService.findByCurrentUser(user);
   }
 
+  @Get('admin/list')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  findForAdmin(@Query('status') status?: string) {
+    const allowed = ['pending', 'approved', 'rejected'] as const;
+    const normalized = allowed.find((value) => value === status);
+    return this.reviewsService.findForAdmin(normalized);
+  }
+
   @Get('hospital/:id')
   @GetHospitalReviewsSwagger()
   findByHospital(

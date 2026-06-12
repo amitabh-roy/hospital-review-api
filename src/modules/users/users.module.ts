@@ -59,6 +59,6 @@ import { UsersService } from './users.service';
     RolesGuard,
     AuthSecurityBootstrap,
   ],
-  exports: [UsersService, JwtModule, JwtAuthGuard, RolesGuard],
+  exports: [UsersService, EmailService, JwtModule, JwtAuthGuard, RolesGuard],
 })
 export class UsersModule {}
