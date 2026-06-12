@@ -3,4 +3,5 @@ export const CONTACT_RESPONSE = {
   FETCHED: 'Contact submissions fetched successfully',
   NOT_FOUND: 'Contact submission not found',
   UPDATED: 'Contact submission updated successfully',
+  REPLIED: 'Reply sent successfully',
 } as const;

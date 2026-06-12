@@ -6,6 +6,8 @@ export class ContactSubmissionResponseDto {
   topic!: string | null;
   message!: string;
   isRead!: boolean;
+  adminReply!: string | null;
+  repliedAt!: Date | null;
   createdAt!: Date;
   updatedAt!: Date;
 }

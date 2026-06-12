@@ -12,4 +12,12 @@ export const REVIEW_RESPONSE: Record<string, string> = {
     'Credential verification is required before submitting a review',
   APPROVED: 'Review approved successfully',
   REJECTED: 'Review rejected successfully',
+  DELETED: 'Review deleted successfully',
+  REPORTED: 'Review reported successfully',
+  REPORT_ALREADY_SUBMITTED: 'You have already reported this review',
+  CANNOT_REPORT_OWN: 'You cannot report your own review',
+  CANNOT_EDIT: 'This review cannot be edited in its current state',
+  FEEDBACK_SENT: 'Review feedback sent to author',
+  FLAGGED_FETCHED: 'Flagged reviews fetched successfully',
+  REPORT_UPDATED: 'Review report updated successfully',
 } as const;

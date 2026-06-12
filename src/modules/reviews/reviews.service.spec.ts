@@ -8,6 +8,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { HospitalModel } from '../../database/models/hospital.model';
 import { HospitalUnitModel } from '../../database/models/hospital-unit.model';
+import { ReviewReportModel } from '../../database/models/review-report.model';
 import { ReviewModel } from '../../database/models/review.model';
 import { RoleModel } from '../../database/models/role.model';
 import { VerificationSubmissionModel } from '../../database/models/verification-submission.model';
@@ -36,10 +37,17 @@ describe('ReviewsService', () => {
   const verificationSubmissionModel = {
     findOne: jest.fn(),
   };
+  const reviewReportModel = {
+    findOne: jest.fn(),
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findByPk: jest.fn(),
+  };
   const emailService = {
     sendReviewSubmittedEmail: jest.fn(),
     sendReviewApprovedEmail: jest.fn(),
     sendReviewRejectedEmail: jest.fn(),
+    sendReviewFeedbackEmail: jest.fn(),
   };
   const authenticatedUser = {
     id: 1,
@@ -67,6 +75,10 @@ describe('ReviewsService', () => {
         {
           provide: getModelToken(VerificationSubmissionModel),
           useValue: verificationSubmissionModel,
+        },
+        {
+          provide: getModelToken(ReviewReportModel),
+          useValue: reviewReportModel,
         },
         { provide: EmailService, useValue: emailService },
       ],

@@ -6,6 +6,7 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 
 import { TempFileStorageService } from '../../common/services/temp-file-storage.service';
+import { assertSelfieLiveness } from '../../common/utils/selfie-liveness.util';
 import { ControllerResponse } from '../../common/interfaces/controller-response.interface';
 import { handleDatabaseException } from '../../common/utils/database-exception.util';
 import { RoleModel } from '../../database/models/role.model';
@@ -34,8 +35,13 @@ export class VerificationService {
     identityMethod: IdentityMethod,
     badgeFile: Express.Multer.File,
     identityFile: Express.Multer.File,
+    captureTimestamp?: string,
   ): Promise<ControllerResponse<VerificationSubmissionResponseDto>> {
     try {
+      if (identityMethod === 'selfie') {
+        assertSelfieLiveness(identityFile, captureTimestamp);
+      }
+
       if (user.verificationStatus === 'verified') {
         throw new BadRequestException(VERIFICATION_RESPONSE.ALREADY_VERIFIED);
       }

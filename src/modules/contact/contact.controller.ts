@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { ContactService } from './contact.service';
 import { CreateContactDto } from './dto/create-contact.dto';
+import { ReplyContactDto } from './dto/reply-contact.dto';
 
 @ApiTags('Contact')
 @Controller()
@@ -44,5 +45,15 @@ export class ContactController {
   @Roles('admin')
   markRead(@Param('id', ParseIntPipe) id: number) {
     return this.contactService.markRead(id);
+  }
+
+  @Post('admin/contact-submissions/:id/reply')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  reply(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ReplyContactDto,
+  ) {
+    return this.contactService.reply(id, dto);
   }
 }

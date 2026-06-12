@@ -8,4 +8,5 @@ export default registerAs('email', () => ({
   smtpPass: process.env.SMTP_PASS ?? '',
   fromAddress: process.env.EMAIL_FROM ?? 'noreply@opencurtain.com',
   fromName: process.env.EMAIL_FROM_NAME ?? 'OpenCurtain',
+  contactInbox: process.env.CONTACT_INBOX ?? 'hello@opencurtain.com',
 }));

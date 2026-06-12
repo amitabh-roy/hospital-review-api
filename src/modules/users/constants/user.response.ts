@@ -17,4 +17,8 @@ export const USER_RESPONSE = {
   EMAIL_NOT_VERIFIED: 'Credential verification is required before submitting reviews',
   ALREADY_VERIFIED: 'Email is already verified',
   VERIFICATION_UPDATED: 'User verification status updated',
+  EMAIL_UPDATED: 'Email updated successfully',
+  PASSWORD_UPDATED: 'Password updated successfully',
+  ACCOUNT_DELETED: 'Account deleted successfully',
+  WRONG_PASSWORD: 'Password is incorrect',
 } as const;

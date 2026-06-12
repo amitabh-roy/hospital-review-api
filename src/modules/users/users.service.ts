@@ -12,6 +12,8 @@ import * as bcrypt from 'bcrypt';
 
 import { ControllerResponse } from '../../common/interfaces/controller-response.interface';
 import { handleDatabaseException } from '../../common/utils/database-exception.util';
+import { LoginEventModel } from '../../database/models/login-event.model';
+import { SavedHospitalModel } from '../../database/models/saved-hospital.model';
 import { UserModel } from '../../database/models/user.model';
 import { RoleModel } from '../../database/models/role.model';
 import { AuthTokensService } from './auth-tokens.service';
@@ -19,8 +21,11 @@ import { USER_RESPONSE } from './constants/user.response';
 import { AdminUpdateVerificationDto } from './dto/admin-update-verification.dto';
 import { AuthTokenResponseDto } from './dto/auth-token-response.dto';
 import { AuthUserResponseDto } from './dto/auth-user-response.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 import { LoginDto } from './dto/login.dto';
 import { SignupDto } from './dto/signup.dto';
+import { UpdateEmailDto } from './dto/update-email.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import { EmailService } from './email.service';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
@@ -32,6 +37,10 @@ export class UsersService {
     private readonly userModel: typeof UserModel,
     @InjectModel(RoleModel)
     private readonly roleModel: typeof RoleModel,
+    @InjectModel(LoginEventModel)
+    private readonly loginEventModel: typeof LoginEventModel,
+    @InjectModel(SavedHospitalModel)
+    private readonly savedHospitalModel: typeof SavedHospitalModel,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly authTokensService: AuthTokensService,
@@ -98,6 +107,7 @@ export class UsersService {
 
   async login(
     dto: LoginDto,
+    meta?: { ipAddress?: string; userAgent?: string | null },
   ): Promise<ControllerResponse<AuthTokenResponseDto>> {
     try {
       const email = dto.email.trim().toLowerCase();
@@ -107,6 +117,13 @@ export class UsersService {
       });
 
       if (!user || !user.role) {
+        await this.recordLoginEvent({
+          email,
+          userId: null,
+          success: false,
+          ipAddress: meta?.ipAddress ?? null,
+          userAgent: meta?.userAgent ?? null,
+        });
         throw new UnauthorizedException(USER_RESPONSE.INVALID_CREDENTIALS);
       }
 
@@ -116,8 +133,23 @@ export class UsersService {
       );
 
       if (!isPasswordValid) {
+        await this.recordLoginEvent({
+          email,
+          userId: user.id,
+          success: false,
+          ipAddress: meta?.ipAddress ?? null,
+          userAgent: meta?.userAgent ?? null,
+        });
         throw new UnauthorizedException(USER_RESPONSE.INVALID_CREDENTIALS);
       }
+
+      await this.recordLoginEvent({
+        email,
+        userId: user.id,
+        success: true,
+        ipAddress: meta?.ipAddress ?? null,
+        userAgent: meta?.userAgent ?? null,
+      });
 
       return {
         message: USER_RESPONSE.LOGIN_SUCCESS,
@@ -328,6 +360,157 @@ export class UsersService {
       message: USER_RESPONSE.PROFILE_FETCHED,
       data: user,
     };
+  }
+
+  async updateEmail(
+    user: AuthenticatedUser,
+    dto: UpdateEmailDto,
+  ): Promise<ControllerResponse<AuthUserResponseDto>> {
+    try {
+      const persisted = await this.userModel.unscoped().findByPk(user.id, {
+        include: [RoleModel],
+      });
+
+      if (!persisted || !persisted.role) {
+        throw new NotFoundException(USER_RESPONSE.USER_NOT_FOUND);
+      }
+
+      const validPassword = await bcrypt.compare(
+        dto.password,
+        persisted.passwordHash,
+      );
+
+      if (!validPassword) {
+        throw new UnauthorizedException(USER_RESPONSE.WRONG_PASSWORD);
+      }
+
+      const email = dto.email.trim().toLowerCase();
+      const existing = await this.userModel.findOne({ where: { email } });
+
+      if (existing && existing.id !== user.id) {
+        throw new ConflictException(USER_RESPONSE.EMAIL_IN_USE);
+      }
+
+      await persisted.update({ email, isVerified: false });
+      await this.sendVerificationEmail(persisted);
+
+      return {
+        message: USER_RESPONSE.EMAIL_UPDATED,
+        data: this.toAuthenticatedUser(persisted),
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: UsersService.name,
+        operation: 'update email',
+        uniqueConstraintMessage: USER_RESPONSE.EMAIL_IN_USE,
+      });
+    }
+  }
+
+  async updatePassword(
+    user: AuthenticatedUser,
+    dto: UpdatePasswordDto,
+  ): Promise<ControllerResponse<null>> {
+    try {
+      const persisted = await this.userModel.unscoped().findByPk(user.id);
+
+      if (!persisted) {
+        throw new NotFoundException(USER_RESPONSE.USER_NOT_FOUND);
+      }
+
+      const validPassword = await bcrypt.compare(
+        dto.currentPassword,
+        persisted.passwordHash,
+      );
+
+      if (!validPassword) {
+        throw new UnauthorizedException(USER_RESPONSE.WRONG_PASSWORD);
+      }
+
+      const saltRounds = this.configService.get<number>('app.saltRounds', 10);
+      const passwordHash = await bcrypt.hash(dto.newPassword, saltRounds);
+      await persisted.update({ passwordHash });
+      await this.authTokensService.revokeAllRefreshTokensForUser(user.id);
+
+      return {
+        message: USER_RESPONSE.PASSWORD_UPDATED,
+        data: null,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: UsersService.name,
+        operation: 'update password',
+      });
+    }
+  }
+
+  async deleteAccount(
+    user: AuthenticatedUser,
+    dto: DeleteAccountDto,
+  ): Promise<ControllerResponse<null>> {
+    try {
+      const persisted = await this.userModel.unscoped().findByPk(user.id);
+
+      if (!persisted) {
+        throw new NotFoundException(USER_RESPONSE.USER_NOT_FOUND);
+      }
+
+      const validPassword = await bcrypt.compare(
+        dto.password,
+        persisted.passwordHash,
+      );
+
+      if (!validPassword) {
+        throw new UnauthorizedException(USER_RESPONSE.WRONG_PASSWORD);
+      }
+
+      await this.savedHospitalModel.destroy({ where: { userId: user.id } });
+      await this.authTokensService.revokeAllRefreshTokensForUser(user.id);
+
+      const saltRounds = this.configService.get<number>('app.saltRounds', 10);
+      const passwordHash = await bcrypt.hash(
+        `deleted-${user.id}-${Date.now()}`,
+        saltRounds,
+      );
+
+      await persisted.update({
+        fullName: 'Deleted User',
+        email: `deleted+${user.id}@opencurtain.invalid`,
+        passwordHash,
+        isVerified: false,
+        verificationStatus: 'rejected',
+      });
+
+      return {
+        message: USER_RESPONSE.ACCOUNT_DELETED,
+        data: null,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: UsersService.name,
+        operation: 'delete account',
+      });
+    }
+  }
+
+  private async recordLoginEvent(input: {
+    email: string;
+    userId: number | null;
+    success: boolean;
+    ipAddress: string | null;
+    userAgent: string | null;
+  }): Promise<void> {
+    try {
+      await this.loginEventModel.create({
+        email: input.email,
+        userId: input.userId,
+        success: input.success,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      });
+    } catch {
+      // Login auditing should not block authentication.
+    }
   }
 
   private async sendVerificationEmail(user: UserModel): Promise<void> {

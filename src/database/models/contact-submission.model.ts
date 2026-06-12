@@ -57,6 +57,20 @@ export class ContactSubmissionModel extends Model {
   })
   declare isRead: boolean;
 
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+    field: 'admin_reply',
+  })
+  declare adminReply: string | null;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'replied_at',
+  })
+  declare repliedAt: Date | null;
+
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 }

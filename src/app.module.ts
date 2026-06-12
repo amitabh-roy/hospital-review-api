@@ -14,6 +14,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { HospitalsModule } from './modules/hospitals/hospitals.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { SavedHospitalsModule } from './modules/saved-hospitals/saved-hospitals.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { UnitsModule } from './modules/units/units.module';
 import { UsersModule } from './modules/users/users.module';
@@ -39,6 +40,7 @@ import databaseConfig from './database/database.config';
     UnitsModule,
     HospitalsModule,
     ReviewsModule,
+    SavedHospitalsModule,
     VerificationModule,
     ContactModule,
     AdminModule,

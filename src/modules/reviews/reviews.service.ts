@@ -10,14 +10,24 @@ import { ControllerResponse } from '../../common/interfaces/controller-response.
 import { handleDatabaseException } from '../../common/utils/database-exception.util';
 import { HospitalModel } from '../../database/models/hospital.model';
 import { HospitalUnitModel } from '../../database/models/hospital-unit.model';
+import { ReviewReportModel } from '../../database/models/review-report.model';
 import { ReviewModel } from '../../database/models/review.model';
 import { RoleModel } from '../../database/models/role.model';
 import { UnitModel } from '../../database/models/unit.model';
 import { UserModel } from '../../database/models/user.model';
 import { VerificationSubmissionModel } from '../../database/models/verification-submission.model';
 import { REVIEW_RESPONSE } from './constants/review.response';
+import { AdminReviewFeedbackDto } from './dto/admin-review-feedback.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { ReportReviewDto } from './dto/report-review.dto';
+import { ResolveReviewReportDto } from './dto/resolve-review-report.dto';
+import { UpdateReviewDto } from './dto/update-review.dto';
 import { resolveReviewRoleId } from './utils/resolve-review-role.util';
+import {
+  buildReviewAttributesFromDto,
+  buildReviewResponse,
+  buildReviewUpdatesFromDto,
+} from './utils/review-form.util';
 import { HospitalReviewsResponseDto } from './dto/hospital-reviews-response.dto';
 import { ListHospitalReviewsQueryDto } from './dto/list-hospital-reviews-query.dto';
 import { ReviewResponseDto } from './dto/review-response.dto';
@@ -37,6 +47,8 @@ export class ReviewsService {
     private readonly roleModel: typeof RoleModel,
     @InjectModel(VerificationSubmissionModel)
     private readonly verificationSubmissionModel: typeof VerificationSubmissionModel,
+    @InjectModel(ReviewReportModel)
+    private readonly reviewReportModel: typeof ReviewReportModel,
     private readonly emailService: EmailService,
   ) {}
 
@@ -85,22 +97,10 @@ export class ReviewsService {
       );
 
       const createdReview = await this.reviewModel.create({
-        hospitalId: dto.hospitalId,
-        unitId: dto.unitId,
         userId: user.id,
         roleId,
-        rating: dto.rating,
-        comment: dto.comment.trim(),
-        employmentType: dto.employmentType.trim().toLowerCase(),
-        shiftType: dto.shiftType.trim().toLowerCase(),
         status: 'pending',
-        hourlyRate: dto.hourlyRate ?? null,
-        patientRatio: dto.patientRatio?.trim() || null,
-        mealBreaks: dto.mealBreaks?.trim() || null,
-        bathroomBreaks: dto.bathroomBreaks?.trim() || null,
-        parkingCost: dto.parkingCost?.trim() || null,
-        managementRating: dto.managementRating ?? null,
-        wouldReturn: dto.wouldReturn ?? null,
+        ...buildReviewAttributesFromDto(dto),
       });
 
       const review = await this.reviewModel.findByPk(createdReview.id, {
@@ -239,6 +239,244 @@ export class ReviewsService {
     }
   }
 
+  async updateByOwner(
+    reviewId: number,
+    dto: UpdateReviewDto,
+    user: AuthenticatedUser,
+  ): Promise<ControllerResponse<ReviewResponseDto>> {
+    try {
+      const review = await this.reviewModel.findByPk(reviewId, {
+        include: [UnitModel, UserModel, RoleModel, HospitalModel],
+      });
+
+      if (!review || review.userId !== user.id) {
+        throw new NotFoundException(REVIEW_RESPONSE.NOT_FOUND);
+      }
+
+      if (!['pending', 'needs_revision', 'rejected'].includes(review.status)) {
+        throw new BadRequestException(REVIEW_RESPONSE.CANNOT_EDIT);
+      }
+
+      const updates: Partial<ReviewModel> = {
+        status: 'pending',
+        adminFeedback: null,
+        ...buildReviewUpdatesFromDto(dto),
+      };
+
+      if (dto.roleName?.trim()) {
+        updates.roleId = await resolveReviewRoleId(
+          this.roleModel,
+          dto.roleName,
+          user.roleId,
+        );
+      }
+
+      await review.update(updates);
+      await review.reload({ include: [UnitModel, UserModel, RoleModel, HospitalModel] });
+
+      return {
+        message: REVIEW_RESPONSE.UPDATED,
+        data: this.toReviewResponse(review),
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: ReviewsService.name,
+        operation: 'review update by owner',
+      });
+    }
+  }
+
+  async deleteByOwner(
+    reviewId: number,
+    user: AuthenticatedUser,
+  ): Promise<ControllerResponse<null>> {
+    try {
+      const review = await this.reviewModel.findByPk(reviewId);
+
+      if (!review || review.userId !== user.id) {
+        throw new NotFoundException(REVIEW_RESPONSE.NOT_FOUND);
+      }
+
+      const hospitalId = review.hospitalId;
+      const wasApproved = review.status === 'approved';
+      await review.destroy();
+
+      if (wasApproved) {
+        await this.syncHospitalAverageRating(hospitalId);
+      }
+
+      return {
+        message: REVIEW_RESPONSE.DELETED,
+        data: null,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: ReviewsService.name,
+        operation: 'review delete by owner',
+      });
+    }
+  }
+
+  async reportReview(
+    reviewId: number,
+    dto: ReportReviewDto,
+    user: AuthenticatedUser,
+  ): Promise<ControllerResponse<null>> {
+    try {
+      const review = await this.reviewModel.findByPk(reviewId);
+
+      if (!review || review.status !== 'approved') {
+        throw new NotFoundException(REVIEW_RESPONSE.NOT_FOUND);
+      }
+
+      if (review.userId === user.id) {
+        throw new BadRequestException(REVIEW_RESPONSE.CANNOT_REPORT_OWN);
+      }
+
+      const existing = await this.reviewReportModel.findOne({
+        where: { reviewId, reporterUserId: user.id },
+      });
+
+      if (existing) {
+        throw new BadRequestException(REVIEW_RESPONSE.REPORT_ALREADY_SUBMITTED);
+      }
+
+      await this.reviewReportModel.create({
+        reviewId,
+        reporterUserId: user.id,
+        reason: dto.reason,
+        status: 'pending',
+      });
+
+      return {
+        message: REVIEW_RESPONSE.REPORTED,
+        data: null,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: ReviewsService.name,
+        operation: 'review report',
+        uniqueConstraintMessage: REVIEW_RESPONSE.REPORT_ALREADY_SUBMITTED,
+        uniqueConstraintType: 'badRequest',
+      });
+    }
+  }
+
+  async findFlaggedReports(): Promise<
+    ControllerResponse<{ items: Array<Record<string, unknown>> }>
+  > {
+    try {
+      const reports = await this.reviewReportModel.findAll({
+        where: { status: 'pending' },
+        include: [
+          {
+            model: ReviewModel,
+            include: [HospitalModel, UserModel, RoleModel, UnitModel],
+          },
+          { model: UserModel, as: 'reporter' },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      return {
+        message: REVIEW_RESPONSE.FLAGGED_FETCHED,
+        data: {
+          items: reports.map((report) => ({
+            id: report.id,
+            reason: report.reason,
+            status: report.status,
+            adminNotes: report.adminNotes,
+            createdAt: report.createdAt,
+            reporter: report.reporter
+              ? {
+                  id: report.reporter.id,
+                  fullName: report.reporter.fullName,
+                  email: report.reporter.email,
+                }
+              : null,
+            review: report.review
+              ? this.toReviewResponse(report.review)
+              : null,
+          })),
+        },
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: ReviewsService.name,
+        operation: 'flagged review listing',
+      });
+    }
+  }
+
+  async resolveReport(
+    reportId: number,
+    dto: ResolveReviewReportDto,
+  ): Promise<ControllerResponse<null>> {
+    try {
+      const report = await this.reviewReportModel.findByPk(reportId, {
+        include: [ReviewModel],
+      });
+
+      if (!report) {
+        throw new NotFoundException(REVIEW_RESPONSE.NOT_FOUND);
+      }
+
+      await report.update({
+        status: dto.status,
+        adminNotes: dto.adminNotes?.trim() || report.adminNotes,
+      });
+
+      return {
+        message: REVIEW_RESPONSE.REPORT_UPDATED,
+        data: null,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: ReviewsService.name,
+        operation: 'resolve review report',
+      });
+    }
+  }
+
+  async sendAdminFeedback(
+    reviewId: number,
+    dto: AdminReviewFeedbackDto,
+  ): Promise<ControllerResponse<ReviewResponseDto>> {
+    try {
+      const review = await this.reviewModel.findByPk(reviewId, {
+        include: [UnitModel, UserModel, RoleModel, HospitalModel],
+      });
+
+      if (!review) {
+        throw new NotFoundException(REVIEW_RESPONSE.NOT_FOUND);
+      }
+
+      const feedback = dto.feedback.trim();
+      await review.update({
+        status: 'needs_revision',
+        adminFeedback: feedback,
+      });
+
+      if (review.user?.email) {
+        this.emailService.sendReviewFeedbackEmail(
+          review.user.email,
+          review.hospital?.name ?? '',
+          feedback,
+        );
+      }
+
+      return {
+        message: REVIEW_RESPONSE.FEEDBACK_SENT,
+        data: this.toReviewResponse(review),
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: ReviewsService.name,
+        operation: 'admin review feedback',
+      });
+    }
+  }
+
   async adminUpdateStatus(
     reviewId: number,
     status: ReviewModel['status'],
@@ -305,35 +543,6 @@ export class ReviewsService {
   }
 
   private toReviewResponse(review: ReviewModel): ReviewResponseDto {
-    return {
-      id: review.id,
-      hospitalId: review.hospitalId,
-      hospitalName: review.hospital?.name,
-      unitId: review.unitId,
-      unitName: review.unit?.name ?? '',
-      roleId: review.roleId,
-      roleName: review.role?.name ?? '',
-      rating: review.rating,
-      comment: review.comment,
-      employmentType: review.employmentType,
-      shiftType: review.shiftType,
-      status: review.status,
-      createdAt: review.createdAt,
-      updatedAt: review.updatedAt,
-      hourlyRate:
-        review.hourlyRate === null || review.hourlyRate === undefined
-          ? null
-          : Number(review.hourlyRate),
-      patientRatio: review.patientRatio,
-      mealBreaks: review.mealBreaks,
-      bathroomBreaks: review.bathroomBreaks,
-      parkingCost: review.parkingCost,
-      managementRating:
-        review.managementRating === null ||
-        review.managementRating === undefined
-          ? null
-          : Number(review.managementRating),
-      wouldReturn: review.wouldReturn,
-    };
+    return buildReviewResponse(review);
   }
 }

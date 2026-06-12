@@ -54,6 +54,7 @@ export class VerificationController {
       identity?: Express.Multer.File[];
     },
     @Body('identityMethod') identityMethodRaw?: string,
+    @Body('captureTimestamp') captureTimestamp?: string,
   ) {
     const badgeFile = files.badge?.[0];
     const identityFile = files.identity?.[0];
@@ -77,6 +78,7 @@ export class VerificationController {
       identityMethod,
       badgeFile,
       identityFile,
+      captureTimestamp,
     );
   }
 

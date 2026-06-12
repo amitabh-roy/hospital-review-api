@@ -2,8 +2,12 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
 import { ContactSubmissionModel } from '../../database/models/contact-submission.model';
+import { HospitalModel } from '../../database/models/hospital.model';
+import { LoginEventModel } from '../../database/models/login-event.model';
+import { ReviewReportModel } from '../../database/models/review-report.model';
 import { ReviewModel } from '../../database/models/review.model';
 import { RoleModel } from '../../database/models/role.model';
+import { UnitModel } from '../../database/models/unit.model';
 import { UserModel } from '../../database/models/user.model';
 import { VerificationSubmissionModel } from '../../database/models/verification-submission.model';
 import { UsersModule } from '../users/users.module';
@@ -17,8 +21,12 @@ import { AdminService } from './admin.service';
       UserModel,
       RoleModel,
       ReviewModel,
+      HospitalModel,
+      UnitModel,
       VerificationSubmissionModel,
       ContactSubmissionModel,
+      ReviewReportModel,
+      LoginEventModel,
     ]),
   ],
   controllers: [AdminController],

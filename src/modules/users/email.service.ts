@@ -61,6 +61,60 @@ export class EmailService {
     );
   }
 
+  sendReviewFeedbackEmail(
+    email: string,
+    hospitalName: string,
+    feedback: string,
+  ): void {
+    this.deliver(
+      email,
+      'Feedback on your OpenCurtain review',
+      `Our team reviewed your submission${hospitalName ? ` for ${hospitalName}` : ''} and needs a revision before it can be published.\n\nFeedback:\n${feedback.trim()}\n\nSign in to your account to edit and resubmit your review.\n\n— The OpenCurtain Team`,
+    );
+  }
+
+  sendContactSubmissionToTeam(
+    firstName: string,
+    lastName: string,
+    email: string,
+    topic: string | null,
+    message: string,
+  ): void {
+    const inbox = this.configService.get<string>(
+      'email.contactInbox',
+      'hello@opencurtain.com',
+    );
+    const name = `${firstName} ${lastName}`.trim();
+
+    this.deliver(
+      inbox,
+      `OpenCurtain contact: ${topic?.trim() || 'General'}`,
+      `New contact form submission\n\nFrom: ${name} <${email}>\nTopic: ${topic?.trim() || 'General'}\n\n${message.trim()}`,
+    );
+  }
+
+  sendContactAutoReply(email: string, firstName: string): void {
+    const greeting = firstName.trim() ? `Hi ${firstName.trim()},` : 'Hi,';
+    this.deliver(
+      email,
+      'We received your message — OpenCurtain',
+      `${greeting}\n\nThanks for contacting OpenCurtain. We received your message and will get back to you soon.\n\n— The OpenCurtain Team`,
+    );
+  }
+
+  sendContactReplyEmail(
+    email: string,
+    firstName: string,
+    reply: string,
+  ): void {
+    const greeting = firstName.trim() ? `Hi ${firstName.trim()},` : 'Hi,';
+    this.deliver(
+      email,
+      'Reply from OpenCurtain',
+      `${greeting}\n\n${reply.trim()}\n\n— The OpenCurtain Team`,
+    );
+  }
+
   private buildLink(path: string, token: string): string {
     const baseUrl = this.configService
       .get<string>('auth.appPublicUrl', 'http://localhost:3000')

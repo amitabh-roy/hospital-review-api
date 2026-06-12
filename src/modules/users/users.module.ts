@@ -9,7 +9,9 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AuthSecurityBootstrap } from '../../config/auth-security.bootstrap';
 import { AuthTokenModel } from '../../database/models/auth-token.model';
+import { LoginEventModel } from '../../database/models/login-event.model';
 import { RefreshTokenModel } from '../../database/models/refresh-token.model';
+import { SavedHospitalModel } from '../../database/models/saved-hospital.model';
 import { RoleModel } from '../../database/models/role.model';
 import { UserModel } from '../../database/models/user.model';
 import { AuthTokensService } from './auth-tokens.service';
@@ -47,6 +49,8 @@ import { UsersService } from './users.service';
       RoleModel,
       RefreshTokenModel,
       AuthTokenModel,
+      LoginEventModel,
+      SavedHospitalModel,
     ]),
   ],
   controllers: [UsersController],

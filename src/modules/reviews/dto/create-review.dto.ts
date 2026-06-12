@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsInt,
   IsNotEmpty,
@@ -120,4 +121,178 @@ export class CreateReviewDto {
   @IsString()
   @MaxLength(150)
   roleName?: string;
+
+  @ApiPropertyOptional({ example: 'I currently work here' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  workedWhen?: string;
+
+  @ApiPropertyOptional({ example: '1–2 years' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  employmentLength?: string;
+
+  @ApiPropertyOptional({ example: '36–40' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  hoursPerWeek?: string;
+
+  @ApiPropertyOptional({ example: '1–2 years' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  yearsInRole?: string;
+
+  @ApiPropertyOptional({ example: 85000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  yearlyCompensation?: number;
+
+  @ApiPropertyOptional({ example: 'yes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  hasBenefits?: string;
+
+  @ApiPropertyOptional({ example: 'yes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  orientationAdequate?: string;
+
+  @ApiPropertyOptional({ example: 'Sometimes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  understaffing?: string;
+
+  @ApiPropertyOptional({ example: 'Sometimes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  floatFrequency?: string;
+
+  @ApiPropertyOptional({ example: 'yes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  clockOutOnTime?: string;
+
+  @ApiPropertyOptional({ example: 'no' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  mandatoryOnCall?: string;
+
+  @ApiPropertyOptional({ example: 'yes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  overtimeOpportunity?: string;
+
+  @ApiPropertyOptional({ example: 'yes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  shiftDifferentials?: string;
+
+  @ApiPropertyOptional({ example: 'yes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  lovedOneCare?: string;
+
+  @ApiPropertyOptional({ example: ['Unsafe staffing'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  lovedOneReasons?: string[];
+
+  @ApiPropertyOptional({ example: 4, minimum: 1, maximum: 5 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  staffingRating?: number;
+
+  @ApiPropertyOptional({ example: 4, minimum: 1, maximum: 5 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  cultureRating?: number;
+
+  @ApiPropertyOptional({ example: 4, minimum: 1, maximum: 5 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  compensationRating?: number;
+
+  @ApiPropertyOptional({ example: 4, minimum: 1, maximum: 5 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  workLifeRating?: number;
+
+  @ApiPropertyOptional({ example: 4, minimum: 1, maximum: 5 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  safetyRating?: number;
+
+  @ApiPropertyOptional({ example: 4, minimum: 1, maximum: 5 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  resourcesRating?: number;
+
+  @ApiPropertyOptional({ example: ['Supportive'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  managementTags?: string[];
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  wouldRecommend?: boolean;
+
+  @ApiPropertyOptional({ example: 'yes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  hasGrowth?: string;
+
+  @ApiPropertyOptional({ example: 'yes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  scheduleAccommodating?: string;
+
+  @ApiPropertyOptional({ example: 'yes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  feelsSafe?: string;
+
+  @ApiPropertyOptional({ example: ['Violence'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  safetyConcerns?: string[];
 }

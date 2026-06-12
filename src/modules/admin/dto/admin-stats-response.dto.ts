@@ -4,4 +4,6 @@ export class AdminStatsResponseDto {
   pendingVerifications!: number;
   pendingReviews!: number;
   unreadMessages!: number;
+  flaggedReviews!: number;
+  flaggedAccounts!: number;
 }

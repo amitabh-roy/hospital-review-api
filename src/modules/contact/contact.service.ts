@@ -4,15 +4,18 @@ import { InjectModel } from '@nestjs/sequelize';
 import { ControllerResponse } from '../../common/interfaces/controller-response.interface';
 import { handleDatabaseException } from '../../common/utils/database-exception.util';
 import { ContactSubmissionModel } from '../../database/models/contact-submission.model';
+import { EmailService } from '../users/email.service';
 import { CONTACT_RESPONSE } from './constants/contact.response';
 import { ContactSubmissionResponseDto } from './dto/contact-submission-response.dto';
 import { CreateContactDto } from './dto/create-contact.dto';
+import { ReplyContactDto } from './dto/reply-contact.dto';
 
 @Injectable()
 export class ContactService {
   constructor(
     @InjectModel(ContactSubmissionModel)
     private readonly contactModel: typeof ContactSubmissionModel,
+    private readonly emailService: EmailService,
   ) {}
 
   async create(
@@ -26,6 +29,18 @@ export class ContactService {
         topic: dto.topic?.trim() || null,
         message: dto.message.trim(),
       });
+
+      this.emailService.sendContactSubmissionToTeam(
+        submission.firstName,
+        submission.lastName,
+        submission.email,
+        submission.topic,
+        submission.message,
+      );
+      this.emailService.sendContactAutoReply(
+        submission.email,
+        submission.firstName,
+      );
 
       return {
         message: CONTACT_RESPONSE.SUBMITTED,
@@ -57,6 +72,42 @@ export class ContactService {
       handleDatabaseException(error, {
         context: ContactService.name,
         operation: 'list contact submissions',
+      });
+    }
+  }
+
+  async reply(
+    id: number,
+    dto: ReplyContactDto,
+  ): Promise<ControllerResponse<ContactSubmissionResponseDto>> {
+    try {
+      const submission = await this.contactModel.findByPk(id);
+
+      if (!submission) {
+        throw new NotFoundException(CONTACT_RESPONSE.NOT_FOUND);
+      }
+
+      const reply = dto.reply.trim();
+      await submission.update({
+        adminReply: reply,
+        repliedAt: new Date(),
+        isRead: true,
+      });
+
+      this.emailService.sendContactReplyEmail(
+        submission.email,
+        submission.firstName,
+        reply,
+      );
+
+      return {
+        message: CONTACT_RESPONSE.REPLIED,
+        data: this.toResponse(submission),
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: ContactService.name,
+        operation: 'reply to contact submission',
       });
     }
   }
@@ -96,6 +147,8 @@ export class ContactService {
       topic: submission.topic,
       message: submission.message,
       isRead: submission.isRead,
+      adminReply: submission.adminReply,
+      repliedAt: submission.repliedAt,
       createdAt: submission.createdAt,
       updatedAt: submission.updatedAt,
     };
