@@ -60,7 +60,7 @@ jobs:
             --instance-ids "$EC2_INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --comment "GitHub Deployment" \
-            --parameters '{"commands":["set -e","sudo -u ubuntu bash -lc \"set -e && git config --global --add safe.directory /home/ubuntu/app && cd /home/ubuntu/app && git fetch origin && git checkout development && git pull origin development && npm ci --include=dev && npm run db:migrate && npm run db:seed && npm run build && pm2 reload hospital-review-api --update-env && pm2 save\""]}' \
+            --parameters '{"commands":["set -e","sudo -u ubuntu bash -lc \"set -e && [ -s /home/ubuntu/.nvm/nvm.sh ] && . /home/ubuntu/.nvm/nvm.sh && git config --global --add safe.directory /home/ubuntu/app && cd /home/ubuntu/app && git fetch origin && git checkout development && git pull origin development && npm ci --include=dev && npm run db:migrate && npm run db:seed && npm run build && pm2 reload hospital-review-api --update-env && pm2 save\""]}' \
             --query "Command.CommandId" \
             --output text \
             --region "$AWS_REGION")
