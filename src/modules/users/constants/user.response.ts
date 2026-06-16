@@ -15,7 +15,17 @@ export const USER_RESPONSE = {
   PASSWORD_RESET_EMAIL_SENT: 'Password reset email sent if the account exists',
   PASSWORD_RESET_SUCCESS: 'Password reset successfully',
   EMAIL_NOT_VERIFIED:
-    'Email verification is required before submitting reviews',
+    'Credential verification is required before submitting reviews',
   ALREADY_VERIFIED: 'Email is already verified',
   VERIFICATION_UPDATED: 'User verification status updated',
+  EMAIL_UPDATED: 'Email updated successfully',
+  PASSWORD_UPDATED: 'Password updated successfully',
+  ACCOUNT_DELETED: 'Account deleted successfully',
+  ACCOUNT_DELETION_REQUESTED:
+    'Account deletion request submitted for admin review',
+  ACCOUNT_DELETION_ALREADY_PENDING:
+    'You already have a pending account deletion request',
+  ACCOUNT_DELETION_NOT_FOUND: 'Account deletion request not found',
+  ACCOUNT_DELETION_UPDATED: 'Account deletion request updated',
+  WRONG_PASSWORD: 'Password is incorrect',
 } as const;

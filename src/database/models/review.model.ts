@@ -15,7 +15,12 @@ import { RoleModel } from './role.model';
 import { UnitModel } from './unit.model';
 import { UserModel } from './user.model';
 
-export const REVIEW_STATUSES = ['pending', 'approved', 'rejected'] as const;
+export const REVIEW_STATUSES = [
+  'pending',
+  'approved',
+  'rejected',
+  'needs_revision',
+] as const;
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
 
 @Table({
@@ -147,6 +152,202 @@ export class ReviewModel extends Model {
     field: 'would_return',
   })
   declare wouldReturn: boolean | null;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+    field: 'admin_feedback',
+  })
+  declare adminFeedback: string | null;
+
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+    field: 'worked_when',
+  })
+  declare workedWhen: string | null;
+
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+    field: 'employment_length',
+  })
+  declare employmentLength: string | null;
+
+  @Column({
+    type: DataType.STRING(30),
+    allowNull: true,
+    field: 'hours_per_week',
+  })
+  declare hoursPerWeek: string | null;
+
+  @Column({
+    type: DataType.STRING(30),
+    allowNull: true,
+    field: 'years_in_role',
+  })
+  declare yearsInRole: string | null;
+
+  @Column({
+    type: DataType.DECIMAL(12, 2),
+    allowNull: true,
+    field: 'yearly_compensation',
+  })
+  declare yearlyCompensation: number | null;
+
+  @Column({
+    type: DataType.STRING(10),
+    allowNull: true,
+    field: 'has_benefits',
+  })
+  declare hasBenefits: string | null;
+
+  @Column({
+    type: DataType.STRING(30),
+    allowNull: true,
+    field: 'orientation_adequate',
+  })
+  declare orientationAdequate: string | null;
+
+  @Column({
+    type: DataType.STRING(30),
+    allowNull: true,
+    field: 'understaffing',
+  })
+  declare understaffing: string | null;
+
+  @Column({
+    type: DataType.STRING(30),
+    allowNull: true,
+    field: 'float_frequency',
+  })
+  declare floatFrequency: string | null;
+
+  @Column({
+    type: DataType.STRING(10),
+    allowNull: true,
+    field: 'clock_out_on_time',
+  })
+  declare clockOutOnTime: string | null;
+
+  @Column({
+    type: DataType.STRING(30),
+    allowNull: true,
+    field: 'mandatory_on_call',
+  })
+  declare mandatoryOnCall: string | null;
+
+  @Column({
+    type: DataType.STRING(30),
+    allowNull: true,
+    field: 'overtime_opportunity',
+  })
+  declare overtimeOpportunity: string | null;
+
+  @Column({
+    type: DataType.STRING(30),
+    allowNull: true,
+    field: 'shift_differentials',
+  })
+  declare shiftDifferentials: string | null;
+
+  @Column({
+    type: DataType.STRING(30),
+    allowNull: true,
+    field: 'loved_one_care',
+  })
+  declare lovedOneCare: string | null;
+
+  @Column({
+    type: DataType.JSONB,
+    allowNull: true,
+    field: 'loved_one_reasons',
+  })
+  declare lovedOneReasons: string[] | null;
+
+  @Column({
+    type: DataType.DECIMAL(3, 2),
+    allowNull: true,
+    field: 'staffing_rating',
+  })
+  declare staffingRating: number | null;
+
+  @Column({
+    type: DataType.DECIMAL(3, 2),
+    allowNull: true,
+    field: 'culture_rating',
+  })
+  declare cultureRating: number | null;
+
+  @Column({
+    type: DataType.DECIMAL(3, 2),
+    allowNull: true,
+    field: 'compensation_rating',
+  })
+  declare compensationRating: number | null;
+
+  @Column({
+    type: DataType.DECIMAL(3, 2),
+    allowNull: true,
+    field: 'work_life_rating',
+  })
+  declare workLifeRating: number | null;
+
+  @Column({
+    type: DataType.DECIMAL(3, 2),
+    allowNull: true,
+    field: 'safety_rating',
+  })
+  declare safetyRating: number | null;
+
+  @Column({
+    type: DataType.DECIMAL(3, 2),
+    allowNull: true,
+    field: 'resources_rating',
+  })
+  declare resourcesRating: number | null;
+
+  @Column({
+    type: DataType.JSONB,
+    allowNull: true,
+    field: 'management_tags',
+  })
+  declare managementTags: string[] | null;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: true,
+    field: 'would_recommend',
+  })
+  declare wouldRecommend: boolean | null;
+
+  @Column({
+    type: DataType.STRING(10),
+    allowNull: true,
+    field: 'has_growth',
+  })
+  declare hasGrowth: string | null;
+
+  @Column({
+    type: DataType.STRING(10),
+    allowNull: true,
+    field: 'schedule_accommodating',
+  })
+  declare scheduleAccommodating: string | null;
+
+  @Column({
+    type: DataType.STRING(10),
+    allowNull: true,
+    field: 'feels_safe',
+  })
+  declare feelsSafe: string | null;
+
+  @Column({
+    type: DataType.JSONB,
+    allowNull: true,
+    field: 'safety_concerns',
+  })
+  declare safetyConcerns: string[] | null;
 
   @BelongsTo(() => HospitalModel)
   declare hospital?: HospitalModel;

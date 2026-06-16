@@ -7,11 +7,15 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 import { ControllerResponse } from '../../common/interfaces/controller-response.interface';
 import { handleDatabaseException } from '../../common/utils/database-exception.util';
+import { LoginEventModel } from '../../database/models/login-event.model';
+import { AccountDeletionRequestModel } from '../../database/models/account-deletion-request.model';
+import { SavedHospitalModel } from '../../database/models/saved-hospital.model';
 import { UserModel } from '../../database/models/user.model';
 import { RoleModel } from '../../database/models/role.model';
 import { AuthTokensService } from './auth-tokens.service';
@@ -19,8 +23,13 @@ import { USER_RESPONSE } from './constants/user.response';
 import { AdminUpdateVerificationDto } from './dto/admin-update-verification.dto';
 import { AuthTokenResponseDto } from './dto/auth-token-response.dto';
 import { AuthUserResponseDto } from './dto/auth-user-response.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
+import { AccountDeletionRequestResponseDto } from './dto/account-deletion-request-response.dto';
+import { ReviewAccountDeletionDto } from './dto/review-account-deletion.dto';
 import { LoginDto } from './dto/login.dto';
 import { SignupDto } from './dto/signup.dto';
+import { UpdateEmailDto } from './dto/update-email.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import { EmailService } from './email.service';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
@@ -32,6 +41,12 @@ export class UsersService {
     private readonly userModel: typeof UserModel,
     @InjectModel(RoleModel)
     private readonly roleModel: typeof RoleModel,
+    @InjectModel(LoginEventModel)
+    private readonly loginEventModel: typeof LoginEventModel,
+    @InjectModel(SavedHospitalModel)
+    private readonly savedHospitalModel: typeof SavedHospitalModel,
+    @InjectModel(AccountDeletionRequestModel)
+    private readonly accountDeletionRequestModel: typeof AccountDeletionRequestModel,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly authTokensService: AuthTokensService,
@@ -78,6 +93,10 @@ export class UsersService {
       }
 
       await this.sendVerificationEmail(persistedUser);
+      this.emailService.sendWelcomeEmail(
+        persistedUser.email,
+        persistedUser.fullName,
+      );
 
       return {
         message: USER_RESPONSE.SIGNUP_SUCCESS,
@@ -94,6 +113,7 @@ export class UsersService {
 
   async login(
     dto: LoginDto,
+    meta?: { ipAddress?: string; userAgent?: string | null },
   ): Promise<ControllerResponse<AuthTokenResponseDto>> {
     try {
       const email = dto.email.trim().toLowerCase();
@@ -103,6 +123,13 @@ export class UsersService {
       });
 
       if (!user || !user.role) {
+        await this.recordLoginEvent({
+          email,
+          userId: null,
+          success: false,
+          ipAddress: meta?.ipAddress ?? null,
+          userAgent: meta?.userAgent ?? null,
+        });
         throw new UnauthorizedException(USER_RESPONSE.INVALID_CREDENTIALS);
       }
 
@@ -112,8 +139,23 @@ export class UsersService {
       );
 
       if (!isPasswordValid) {
+        await this.recordLoginEvent({
+          email,
+          userId: user.id,
+          success: false,
+          ipAddress: meta?.ipAddress ?? null,
+          userAgent: meta?.userAgent ?? null,
+        });
         throw new UnauthorizedException(USER_RESPONSE.INVALID_CREDENTIALS);
       }
+
+      await this.recordLoginEvent({
+        email,
+        userId: user.id,
+        success: true,
+        ipAddress: meta?.ipAddress ?? null,
+        userAgent: meta?.userAgent ?? null,
+      });
 
       return {
         message: USER_RESPONSE.LOGIN_SUCCESS,
@@ -183,7 +225,6 @@ export class UsersService {
 
       await user.update({
         isVerified: true,
-        verificationStatus: 'verified',
       });
 
       const updated = await this.userModel.findByPk(user.id, {
@@ -325,6 +366,296 @@ export class UsersService {
       message: USER_RESPONSE.PROFILE_FETCHED,
       data: user,
     };
+  }
+
+  async updateEmail(
+    user: AuthenticatedUser,
+    dto: UpdateEmailDto,
+  ): Promise<ControllerResponse<AuthUserResponseDto>> {
+    try {
+      const persisted = await this.userModel.unscoped().findByPk(user.id, {
+        include: [RoleModel],
+      });
+
+      if (!persisted || !persisted.role) {
+        throw new NotFoundException(USER_RESPONSE.USER_NOT_FOUND);
+      }
+
+      const validPassword = await bcrypt.compare(
+        dto.password,
+        persisted.passwordHash,
+      );
+
+      if (!validPassword) {
+        throw new UnauthorizedException(USER_RESPONSE.WRONG_PASSWORD);
+      }
+
+      const email = dto.email.trim().toLowerCase();
+      const existing = await this.userModel.findOne({ where: { email } });
+
+      if (existing && existing.id !== user.id) {
+        throw new ConflictException(USER_RESPONSE.EMAIL_IN_USE);
+      }
+
+      await persisted.update({ email, isVerified: false });
+      await this.sendVerificationEmail(persisted);
+
+      return {
+        message: USER_RESPONSE.EMAIL_UPDATED,
+        data: this.toAuthenticatedUser(persisted),
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: UsersService.name,
+        operation: 'update email',
+        uniqueConstraintMessage: USER_RESPONSE.EMAIL_IN_USE,
+      });
+    }
+  }
+
+  async updatePassword(
+    user: AuthenticatedUser,
+    dto: UpdatePasswordDto,
+  ): Promise<ControllerResponse<null>> {
+    try {
+      const persisted = await this.userModel.unscoped().findByPk(user.id);
+
+      if (!persisted) {
+        throw new NotFoundException(USER_RESPONSE.USER_NOT_FOUND);
+      }
+
+      const validPassword = await bcrypt.compare(
+        dto.currentPassword,
+        persisted.passwordHash,
+      );
+
+      if (!validPassword) {
+        throw new UnauthorizedException(USER_RESPONSE.WRONG_PASSWORD);
+      }
+
+      const saltRounds = this.configService.get<number>('app.saltRounds', 10);
+      const passwordHash = await bcrypt.hash(dto.newPassword, saltRounds);
+      await persisted.update({ passwordHash });
+      await this.authTokensService.revokeAllRefreshTokensForUser(user.id);
+
+      return {
+        message: USER_RESPONSE.PASSWORD_UPDATED,
+        data: null,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: UsersService.name,
+        operation: 'update password',
+      });
+    }
+  }
+
+  async requestAccountDeletion(
+    user: AuthenticatedUser,
+    dto: DeleteAccountDto,
+  ): Promise<ControllerResponse<AccountDeletionRequestResponseDto>> {
+    try {
+      const persisted = await this.userModel.unscoped().findByPk(user.id);
+
+      if (!persisted) {
+        throw new NotFoundException(USER_RESPONSE.USER_NOT_FOUND);
+      }
+
+      const validPassword = await bcrypt.compare(
+        dto.password,
+        persisted.passwordHash,
+      );
+
+      if (!validPassword) {
+        throw new UnauthorizedException(USER_RESPONSE.WRONG_PASSWORD);
+      }
+
+      const existingPending = await this.accountDeletionRequestModel.findOne({
+        where: { userId: user.id, status: 'pending' },
+      });
+
+      if (existingPending) {
+        throw new BadRequestException(
+          USER_RESPONSE.ACCOUNT_DELETION_ALREADY_PENDING,
+        );
+      }
+
+      const request = await this.accountDeletionRequestModel.create({
+        userId: user.id,
+        reason: dto.reason.trim(),
+        status: 'pending',
+      });
+
+      const loaded = await this.accountDeletionRequestModel.findByPk(
+        request.id,
+        {
+          include: [{ model: UserModel, include: [RoleModel] }],
+        },
+      );
+
+      return {
+        message: USER_RESPONSE.ACCOUNT_DELETION_REQUESTED,
+        data: this.toDeletionRequestResponse(loaded!),
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: UsersService.name,
+        operation: 'request account deletion',
+      });
+    }
+  }
+
+  async getMyDeletionRequest(
+    user: AuthenticatedUser,
+  ): Promise<ControllerResponse<AccountDeletionRequestResponseDto | null>> {
+    try {
+      const request = await this.accountDeletionRequestModel.findOne({
+        where: {
+          userId: user.id,
+          status: { [Op.in]: ['pending', 'rejected'] },
+        },
+        include: [{ model: UserModel, include: [RoleModel] }],
+        order: [['createdAt', 'DESC']],
+      });
+
+      return {
+        message: USER_RESPONSE.PROFILE_FETCHED,
+        data: request ? this.toDeletionRequestResponse(request) : null,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: UsersService.name,
+        operation: 'fetch account deletion request',
+      });
+    }
+  }
+
+  async listPendingDeletionRequests(): Promise<
+    ControllerResponse<{ items: AccountDeletionRequestResponseDto[] }>
+  > {
+    try {
+      const items = await this.accountDeletionRequestModel.findAll({
+        where: { status: 'pending' },
+        include: [{ model: UserModel, include: [RoleModel] }],
+        order: [['createdAt', 'ASC']],
+      });
+
+      return {
+        message: USER_RESPONSE.ACCOUNT_DELETION_UPDATED,
+        data: {
+          items: items.map((item) => this.toDeletionRequestResponse(item)),
+        },
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: UsersService.name,
+        operation: 'list pending account deletion requests',
+      });
+    }
+  }
+
+  async reviewDeletionRequest(
+    requestId: number,
+    dto: ReviewAccountDeletionDto,
+  ): Promise<ControllerResponse<AccountDeletionRequestResponseDto>> {
+    try {
+      const request = await this.accountDeletionRequestModel.findByPk(
+        requestId,
+        {
+          include: [{ model: UserModel, include: [RoleModel] }],
+        },
+      );
+
+      if (!request || request.status !== 'pending') {
+        throw new NotFoundException(USER_RESPONSE.ACCOUNT_DELETION_NOT_FOUND);
+      }
+
+      if (dto.status === 'approved') {
+        await this.performAccountDeletion(request.userId);
+      }
+
+      await request.update({
+        status: dto.status,
+        adminNote: dto.adminNote?.trim() || null,
+        reviewedAt: new Date(),
+      });
+
+      await request.reload({
+        include: [{ model: UserModel, include: [RoleModel] }],
+      });
+
+      return {
+        message: USER_RESPONSE.ACCOUNT_DELETION_UPDATED,
+        data: this.toDeletionRequestResponse(request),
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: UsersService.name,
+        operation: 'review account deletion request',
+      });
+    }
+  }
+
+  async performAccountDeletion(userId: number): Promise<void> {
+    const persisted = await this.userModel.unscoped().findByPk(userId);
+
+    if (!persisted) {
+      throw new NotFoundException(USER_RESPONSE.USER_NOT_FOUND);
+    }
+
+    await this.savedHospitalModel.destroy({ where: { userId } });
+    await this.authTokensService.revokeAllRefreshTokensForUser(userId);
+
+    const saltRounds = this.configService.get<number>('app.saltRounds', 10);
+    const passwordHash = await bcrypt.hash(
+      `deleted-${userId}-${Date.now()}`,
+      saltRounds,
+    );
+
+    await persisted.update({
+      fullName: 'Deleted User',
+      email: `deleted+${userId}@opencurtain.invalid`,
+      passwordHash,
+      isVerified: false,
+      verificationStatus: 'rejected',
+    });
+  }
+
+  private toDeletionRequestResponse(
+    request: AccountDeletionRequestModel,
+  ): AccountDeletionRequestResponseDto {
+    return {
+      id: request.id,
+      userId: request.userId,
+      userFullName: request.user?.fullName,
+      userEmail: request.user?.email,
+      reason: request.reason,
+      status: request.status,
+      adminNote: request.adminNote,
+      reviewedAt: request.reviewedAt,
+      createdAt: request.createdAt,
+      updatedAt: request.updatedAt,
+    };
+  }
+
+  private async recordLoginEvent(input: {
+    email: string;
+    userId: number | null;
+    success: boolean;
+    ipAddress: string | null;
+    userAgent: string | null;
+  }): Promise<void> {
+    try {
+      await this.loginEventModel.create({
+        email: input.email,
+        userId: input.userId,
+        success: input.success,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      });
+    } catch {
+      // Login auditing should not block authentication.
+    }
   }
 
   private async sendVerificationEmail(user: UserModel): Promise<void> {

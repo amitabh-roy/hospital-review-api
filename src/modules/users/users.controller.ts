@@ -8,8 +8,10 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
@@ -34,7 +36,10 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 import { SignupDto } from './dto/signup.dto';
+import { UpdateEmailDto } from './dto/update-email.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import type { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { UsersService } from './users.service';
@@ -56,8 +61,11 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @LoginSwagger()
-  login(@Body() dto: LoginDto) {
-    return this.usersService.login(dto);
+  login(@Body() dto: LoginDto, @Req() req: Request) {
+    return this.usersService.login(dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
   }
 
   @Post('refresh')
@@ -125,5 +133,38 @@ export class UsersController {
   @MeSwagger()
   me(@CurrentUser() user: AuthenticatedUser) {
     return this.usersService.getMe(user);
+  }
+
+  @Patch('me/email')
+  @UseGuards(JwtAuthGuard)
+  updateEmail(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateEmailDto,
+  ) {
+    return this.usersService.updateEmail(user, dto);
+  }
+
+  @Patch('me/password')
+  @UseGuards(JwtAuthGuard)
+  updatePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdatePasswordDto,
+  ) {
+    return this.usersService.updatePassword(user, dto);
+  }
+
+  @Get('me/deletion-request')
+  @UseGuards(JwtAuthGuard)
+  getMyDeletionRequest(@CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.getMyDeletionRequest(user);
+  }
+
+  @Post('me/deletion-request')
+  @UseGuards(JwtAuthGuard)
+  requestAccountDeletion(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: DeleteAccountDto,
+  ) {
+    return this.usersService.requestAccountDeletion(user, dto);
   }
 }

@@ -37,10 +37,25 @@ async function resetSequence(queryInterface, tableName) {
   );
 }
 
+async function existsById(queryInterface, tableName, id) {
+  const [rows] = await queryInterface.sequelize.query(
+    `SELECT id FROM "${tableName}" WHERE id = :id LIMIT 1`,
+    { replacements: { id } },
+  );
+
+  return rows.length > 0;
+}
+
 /** @type {import('sequelize-cli').Seeder} */
 module.exports = {
   async up(queryInterface) {
-    await queryInterface.bulkInsert('units', UNITS);
+    for (const unit of UNITS) {
+      if (await existsById(queryInterface, 'units', unit.id)) {
+        continue;
+      }
+
+      await queryInterface.bulkInsert('units', [unit]);
+    }
 
     await resetSequence(queryInterface, 'units');
   },
