@@ -52,7 +52,9 @@ export class TempFileStorageService {
   async deleteFiles(
     filePaths: Array<string | null | undefined>,
   ): Promise<void> {
-    await Promise.all(filePaths.map((filePath) => this.deleteFileIfExists(filePath)));
+    await Promise.all(
+      filePaths.map((filePath) => this.deleteFileIfExists(filePath)),
+    );
   }
 
   resolveAbsolutePath(filePath: string): string {

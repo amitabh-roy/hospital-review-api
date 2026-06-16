@@ -102,11 +102,7 @@ export class EmailService {
     );
   }
 
-  sendContactReplyEmail(
-    email: string,
-    firstName: string,
-    reply: string,
-  ): void {
+  sendContactReplyEmail(email: string, firstName: string, reply: string): void {
     const greeting = firstName.trim() ? `Hi ${firstName.trim()},` : 'Hi,';
     this.deliver(
       email,

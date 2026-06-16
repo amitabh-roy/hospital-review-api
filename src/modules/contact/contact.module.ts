@@ -7,10 +7,7 @@ import { ContactController } from './contact.controller';
 import { ContactService } from './contact.service';
 
 @Module({
-  imports: [
-    UsersModule,
-    SequelizeModule.forFeature([ContactSubmissionModel]),
-  ],
+  imports: [UsersModule, SequelizeModule.forFeature([ContactSubmissionModel])],
   controllers: [ContactController],
   providers: [ContactService],
   exports: [ContactService],

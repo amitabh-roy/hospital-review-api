@@ -9,7 +9,11 @@ import { SavedHospitalsService } from './saved-hospitals.service';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([SavedHospitalModel, HospitalModel, ReviewModel]),
+    SequelizeModule.forFeature([
+      SavedHospitalModel,
+      HospitalModel,
+      ReviewModel,
+    ]),
   ],
   controllers: [SavedHospitalsController],
   providers: [SavedHospitalsService],

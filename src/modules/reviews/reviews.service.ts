@@ -81,9 +81,10 @@ export class ReviewsService {
       }
 
       if (user.verificationStatus !== 'verified') {
-        const pendingVerification = await this.verificationSubmissionModel.findOne({
-          where: { userId: user.id, status: 'pending' },
-        });
+        const pendingVerification =
+          await this.verificationSubmissionModel.findOne({
+            where: { userId: user.id, status: 'pending' },
+          });
 
         if (!pendingVerification) {
           throw new BadRequestException(REVIEW_RESPONSE.VERIFICATION_REQUIRED);
@@ -272,7 +273,9 @@ export class ReviewsService {
       }
 
       await review.update(updates);
-      await review.reload({ include: [UnitModel, UserModel, RoleModel, HospitalModel] });
+      await review.reload({
+        include: [UnitModel, UserModel, RoleModel, HospitalModel],
+      });
 
       return {
         message: REVIEW_RESPONSE.UPDATED,
@@ -394,9 +397,7 @@ export class ReviewsService {
                   email: report.reporter.email,
                 }
               : null,
-            review: report.review
-              ? this.toReviewResponse(report.review)
-              : null,
+            review: report.review ? this.toReviewResponse(report.review) : null,
           })),
         },
       };
@@ -502,9 +503,15 @@ export class ReviewsService {
         const hospitalName = review.hospital?.name ?? '';
 
         if (status === 'approved') {
-          this.emailService.sendReviewApprovedEmail(review.user.email, hospitalName);
+          this.emailService.sendReviewApprovedEmail(
+            review.user.email,
+            hospitalName,
+          );
         } else if (status === 'rejected') {
-          this.emailService.sendReviewRejectedEmail(review.user.email, hospitalName);
+          this.emailService.sendReviewRejectedEmail(
+            review.user.email,
+            hospitalName,
+          );
         }
       }
 

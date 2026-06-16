@@ -50,10 +50,7 @@ export class ContactController {
   @Post('admin/contact-submissions/:id/reply')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  reply(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: ReplyContactDto,
-  ) {
+  reply(@Param('id', ParseIntPipe) id: number, @Body() dto: ReplyContactDto) {
     return this.contactService.reply(id, dto);
   }
 }

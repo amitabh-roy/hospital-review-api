@@ -100,7 +100,8 @@ export function buildReviewUpdatesFromDto(
   if (dto.patientRatio !== undefined) {
     updates.patientRatio = trimOrNull(dto.patientRatio);
   }
-  if (dto.mealBreaks !== undefined) updates.mealBreaks = trimOrNull(dto.mealBreaks);
+  if (dto.mealBreaks !== undefined)
+    updates.mealBreaks = trimOrNull(dto.mealBreaks);
   if (dto.bathroomBreaks !== undefined) {
     updates.bathroomBreaks = trimOrNull(dto.bathroomBreaks);
   }
@@ -111,18 +112,21 @@ export function buildReviewUpdatesFromDto(
     updates.managementRating = parseOptionalRating(dto.managementRating);
   }
   if (dto.wouldReturn !== undefined) updates.wouldReturn = dto.wouldReturn;
-  if (dto.workedWhen !== undefined) updates.workedWhen = trimOrNull(dto.workedWhen);
+  if (dto.workedWhen !== undefined)
+    updates.workedWhen = trimOrNull(dto.workedWhen);
   if (dto.employmentLength !== undefined) {
     updates.employmentLength = trimOrNull(dto.employmentLength);
   }
   if (dto.hoursPerWeek !== undefined) {
     updates.hoursPerWeek = trimOrNull(dto.hoursPerWeek);
   }
-  if (dto.yearsInRole !== undefined) updates.yearsInRole = trimOrNull(dto.yearsInRole);
+  if (dto.yearsInRole !== undefined)
+    updates.yearsInRole = trimOrNull(dto.yearsInRole);
   if (dto.yearlyCompensation !== undefined) {
     updates.yearlyCompensation = parseOptionalAmount(dto.yearlyCompensation);
   }
-  if (dto.hasBenefits !== undefined) updates.hasBenefits = trimOrNull(dto.hasBenefits);
+  if (dto.hasBenefits !== undefined)
+    updates.hasBenefits = trimOrNull(dto.hasBenefits);
   if (dto.orientationAdequate !== undefined) {
     updates.orientationAdequate = trimOrNull(dto.orientationAdequate);
   }
@@ -171,12 +175,15 @@ export function buildReviewUpdatesFromDto(
   if (dto.managementTags !== undefined) {
     updates.managementTags = parseStringArray(dto.managementTags);
   }
-  if (dto.wouldRecommend !== undefined) updates.wouldRecommend = dto.wouldRecommend;
-  if (dto.hasGrowth !== undefined) updates.hasGrowth = trimOrNull(dto.hasGrowth);
+  if (dto.wouldRecommend !== undefined)
+    updates.wouldRecommend = dto.wouldRecommend;
+  if (dto.hasGrowth !== undefined)
+    updates.hasGrowth = trimOrNull(dto.hasGrowth);
   if (dto.scheduleAccommodating !== undefined) {
     updates.scheduleAccommodating = trimOrNull(dto.scheduleAccommodating);
   }
-  if (dto.feelsSafe !== undefined) updates.feelsSafe = trimOrNull(dto.feelsSafe);
+  if (dto.feelsSafe !== undefined)
+    updates.feelsSafe = trimOrNull(dto.feelsSafe);
   if (dto.safetyConcerns !== undefined) {
     updates.safetyConcerns = parseStringArray(dto.safetyConcerns);
   }

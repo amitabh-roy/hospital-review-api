@@ -14,13 +14,15 @@ export const USER_RESPONSE = {
   VERIFICATION_EMAIL_SENT: 'Verification email sent if the account exists',
   PASSWORD_RESET_EMAIL_SENT: 'Password reset email sent if the account exists',
   PASSWORD_RESET_SUCCESS: 'Password reset successfully',
-  EMAIL_NOT_VERIFIED: 'Credential verification is required before submitting reviews',
+  EMAIL_NOT_VERIFIED:
+    'Credential verification is required before submitting reviews',
   ALREADY_VERIFIED: 'Email is already verified',
   VERIFICATION_UPDATED: 'User verification status updated',
   EMAIL_UPDATED: 'Email updated successfully',
   PASSWORD_UPDATED: 'Password updated successfully',
   ACCOUNT_DELETED: 'Account deleted successfully',
-  ACCOUNT_DELETION_REQUESTED: 'Account deletion request submitted for admin review',
+  ACCOUNT_DELETION_REQUESTED:
+    'Account deletion request submitted for admin review',
   ACCOUNT_DELETION_ALREADY_PENDING:
     'You already have a pending account deletion request',
   ACCOUNT_DELETION_NOT_FOUND: 'Account deletion request not found',

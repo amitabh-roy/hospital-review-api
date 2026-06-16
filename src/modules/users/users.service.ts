@@ -486,9 +486,12 @@ export class UsersService {
         status: 'pending',
       });
 
-      const loaded = await this.accountDeletionRequestModel.findByPk(request.id, {
-        include: [{ model: UserModel, include: [RoleModel] }],
-      });
+      const loaded = await this.accountDeletionRequestModel.findByPk(
+        request.id,
+        {
+          include: [{ model: UserModel, include: [RoleModel] }],
+        },
+      );
 
       return {
         message: USER_RESPONSE.ACCOUNT_DELETION_REQUESTED,
@@ -577,7 +580,9 @@ export class UsersService {
         reviewedAt: new Date(),
       });
 
-      await request.reload({ include: [{ model: UserModel, include: [RoleModel] }] });
+      await request.reload({
+        include: [{ model: UserModel, include: [RoleModel] }],
+      });
 
       return {
         message: USER_RESPONSE.ACCOUNT_DELETION_UPDATED,

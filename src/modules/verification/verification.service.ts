@@ -120,9 +120,7 @@ export class VerificationService {
     }
 
     const filePath =
-      type === 'badge'
-        ? submission.badgeFilePath
-        : submission.identityFilePath;
+      type === 'badge' ? submission.badgeFilePath : submission.identityFilePath;
 
     if (!filePath) {
       throw new NotFoundException(VERIFICATION_RESPONSE.NOT_FOUND);
@@ -170,11 +168,14 @@ export class VerificationService {
 
       if (user) {
         await user.update({
-          verificationStatus: dto.status === 'approved' ? 'verified' : 'rejected',
+          verificationStatus:
+            dto.status === 'approved' ? 'verified' : 'rejected',
         });
       }
 
-      await submission.reload({ include: [{ model: UserModel, include: [RoleModel] }] });
+      await submission.reload({
+        include: [{ model: UserModel, include: [RoleModel] }],
+      });
 
       return {
         message: VERIFICATION_RESPONSE.UPDATED,
