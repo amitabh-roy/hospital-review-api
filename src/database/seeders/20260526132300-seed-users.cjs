@@ -44,9 +44,10 @@ module.exports = {
     const seedPassword = process.env.SEED_DEV_PASSWORD?.trim();
 
     if (!seedPassword) {
-      throw new Error(
-        '[seed-users] Set SEED_DEV_PASSWORD in your local .env before running user seeds.',
+      console.warn(
+        '[seed-users] Skipping dev user seeds — set SEED_DEV_PASSWORD in .env to seed users.',
       );
+      return;
     }
 
     console.warn(

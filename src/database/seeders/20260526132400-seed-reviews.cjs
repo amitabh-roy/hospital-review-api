@@ -1,5 +1,9 @@
 'use strict';
 
+const {
+  syncHospitalAverageRatings,
+} = require('../helpers/sync-hospital-ratings.cjs');
+
 const REVIEWS = [
   {
     id: 1,
@@ -62,6 +66,17 @@ async function existsById(queryInterface, tableName, id) {
 /** @type {import('sequelize-cli').Seeder} */
 module.exports = {
   async up(queryInterface) {
+    const [users] = await queryInterface.sequelize.query(
+      'SELECT id FROM users WHERE id = 1 LIMIT 1',
+    );
+
+    if (users.length === 0) {
+      console.warn(
+        '[seed-reviews] Skipping sample reviews — no seeded users found.',
+      );
+      return;
+    }
+
     const now = new Date();
 
     for (const review of REVIEWS) {
@@ -79,6 +94,7 @@ module.exports = {
     }
 
     await resetSequence(queryInterface, 'reviews');
+    await syncHospitalAverageRatings(queryInterface);
   },
 
   async down(queryInterface) {

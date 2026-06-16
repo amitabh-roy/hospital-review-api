@@ -1,5 +1,7 @@
 'use strict';
 
+const { syncHospitalAverageRatings } = require('../helpers/sync-hospital-ratings.cjs');
+
 /**
  * Additive seeder for databases that already ran the original hospital seeds.
  * Safe to run multiple times — skips rows that already exist.
@@ -187,6 +189,7 @@ module.exports = {
     }
 
     await resetSequence(queryInterface, 'reviews');
+    await syncHospitalAverageRatings(queryInterface);
   },
 
   async down(queryInterface) {

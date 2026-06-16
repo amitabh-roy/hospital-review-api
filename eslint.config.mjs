@@ -42,6 +42,7 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
     },
   },
