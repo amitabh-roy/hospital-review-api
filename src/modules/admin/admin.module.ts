@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
+import { AccountDeletionRequestModel } from '../../database/models/account-deletion-request.model';
 import { ContactSubmissionModel } from '../../database/models/contact-submission.model';
 import { HospitalModel } from '../../database/models/hospital.model';
 import { LoginEventModel } from '../../database/models/login-event.model';
@@ -24,6 +25,7 @@ import { AdminService } from './admin.service';
       HospitalModel,
       UnitModel,
       VerificationSubmissionModel,
+      AccountDeletionRequestModel,
       ContactSubmissionModel,
       ReviewReportModel,
       LoginEventModel,

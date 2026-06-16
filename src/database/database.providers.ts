@@ -1,3 +1,4 @@
+import { AccountDeletionRequestModel } from './models/account-deletion-request.model';
 import { AuthTokenModel } from './models/auth-token.model';
 import { ContactSubmissionModel } from './models/contact-submission.model';
 import { HospitalModel } from './models/hospital.model';
@@ -13,6 +14,7 @@ import { UserModel } from './models/user.model';
 import { VerificationSubmissionModel } from './models/verification-submission.model';
 
 export const databaseModels = [
+  AccountDeletionRequestModel,
   RoleModel,
   UserModel,
   RefreshTokenModel,

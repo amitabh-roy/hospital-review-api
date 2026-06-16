@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -154,12 +153,18 @@ export class UsersController {
     return this.usersService.updatePassword(user, dto);
   }
 
-  @Delete('me')
+  @Get('me/deletion-request')
   @UseGuards(JwtAuthGuard)
-  deleteAccount(
+  getMyDeletionRequest(@CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.getMyDeletionRequest(user);
+  }
+
+  @Post('me/deletion-request')
+  @UseGuards(JwtAuthGuard)
+  requestAccountDeletion(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: DeleteAccountDto,
   ) {
-    return this.usersService.deleteAccount(user, dto);
+    return this.usersService.requestAccountDeletion(user, dto);
   }
 }

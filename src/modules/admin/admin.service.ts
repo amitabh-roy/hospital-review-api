@@ -4,6 +4,7 @@ import { col, fn, Op } from 'sequelize';
 
 import { ControllerResponse } from '../../common/interfaces/controller-response.interface';
 import { handleDatabaseException } from '../../common/utils/database-exception.util';
+import { AccountDeletionRequestModel } from '../../database/models/account-deletion-request.model';
 import { ContactSubmissionModel } from '../../database/models/contact-submission.model';
 import { HospitalModel } from '../../database/models/hospital.model';
 import { LoginEventModel } from '../../database/models/login-event.model';
@@ -42,6 +43,8 @@ export class AdminService {
     private readonly loginEventModel: typeof LoginEventModel,
     @InjectModel(HospitalModel)
     private readonly hospitalModel: typeof HospitalModel,
+    @InjectModel(AccountDeletionRequestModel)
+    private readonly accountDeletionRequestModel: typeof AccountDeletionRequestModel,
   ) {}
 
   async getStats(): Promise<ControllerResponse<AdminStatsResponseDto>> {
@@ -54,6 +57,7 @@ export class AdminService {
         unreadMessages,
         flaggedReviews,
         flaggedAccounts,
+        pendingAccountDeletions,
       ] = await Promise.all([
         this.userModel.count({
           include: [
@@ -70,6 +74,9 @@ export class AdminService {
         this.contactModel.count({ where: { isRead: false } }),
         this.reviewReportModel.count({ where: { status: 'pending' } }),
         this.userModel.count({ where: { verificationStatus: 'rejected' } }),
+        this.accountDeletionRequestModel.count({
+          where: { status: 'pending' },
+        }),
       ]);
 
       return {
@@ -82,6 +89,7 @@ export class AdminService {
           unreadMessages,
           flaggedReviews,
           flaggedAccounts,
+          pendingAccountDeletions,
         },
       };
     } catch (error) {
@@ -175,9 +183,7 @@ export class AdminService {
     }
   }
 
-  async getSecurityActivity(
-    admin: AuthenticatedUser,
-  ): Promise<
+  async getSecurityActivity(admin: AuthenticatedUser): Promise<
     ControllerResponse<{
       adminProfile: {
         email: string;
@@ -196,39 +202,52 @@ export class AdminService {
     }>
   > {
     try {
-      const [adminUser, recentLogins, recentUsers, recentReviews, recentVerifications, recentReports] =
-        await Promise.all([
-          this.userModel.findByPk(admin.id),
-          this.loginEventModel.findAll({
-            order: [['createdAt', 'DESC']],
-            limit: 50,
-          }),
-          this.userModel.findAll({
-            include: [RoleModel],
-            order: [['createdAt', 'DESC']],
-            limit: 10,
-          }),
-          this.reviewModel.findAll({
-            include: [HospitalModel, UserModel],
-            order: [['createdAt', 'DESC']],
-            limit: 10,
-          }),
-          this.verificationModel.findAll({
-            include: [UserModel],
-            order: [['createdAt', 'DESC']],
-            limit: 10,
-          }),
-          this.reviewReportModel.findAll({
-            include: [
-              {
-                model: ReviewModel,
-                include: [HospitalModel],
-              },
-            ],
-            order: [['createdAt', 'DESC']],
-            limit: 10,
-          }),
-        ]);
+      const [
+        adminUser,
+        recentLogins,
+        recentUsers,
+        recentReviews,
+        recentVerifications,
+        recentReports,
+        recentDeletionRequests,
+      ] = await Promise.all([
+        this.userModel.findByPk(admin.id),
+        this.loginEventModel.findAll({
+          order: [['createdAt', 'DESC']],
+          limit: 50,
+        }),
+        this.userModel.findAll({
+          include: [RoleModel],
+          order: [['createdAt', 'DESC']],
+          limit: 10,
+        }),
+        this.reviewModel.findAll({
+          include: [HospitalModel, UserModel],
+          order: [['createdAt', 'DESC']],
+          limit: 10,
+        }),
+        this.verificationModel.findAll({
+          include: [UserModel],
+          order: [['createdAt', 'DESC']],
+          limit: 10,
+        }),
+        this.reviewReportModel.findAll({
+          include: [
+            {
+              model: ReviewModel,
+              include: [HospitalModel],
+            },
+          ],
+          order: [['createdAt', 'DESC']],
+          limit: 10,
+        }),
+        this.accountDeletionRequestModel.findAll({
+          where: { status: 'pending' },
+          include: [UserModel],
+          order: [['createdAt', 'DESC']],
+          limit: 10,
+        }),
+      ]);
 
       const platformEvents: PlatformEvent[] = [
         ...recentUsers
@@ -256,6 +275,12 @@ export class AdminService {
           tone: 'warn' as const,
           description: `Review flagged — ${report.review?.hospital?.name ?? `Review #${report.reviewId}`}`,
           createdAt: report.createdAt,
+        })),
+        ...recentDeletionRequests.map((request) => ({
+          id: `deletion-${request.id}`,
+          tone: 'warn' as const,
+          description: `Account deletion requested — ${request.user?.fullName ?? `User #${request.userId}`}`,
+          createdAt: request.createdAt,
         })),
       ]
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
@@ -310,10 +335,28 @@ export class AdminService {
         'created_at',
       ];
 
-      const escape = (value: unknown) => {
-        const text = value === null || value === undefined ? '' : String(value);
-        return `"${text.replace(/"/g, '""')}"`;
+      const toCsvCell = (value: unknown): string => {
+        if (value === null || value === undefined) {
+          return '';
+        }
+
+        if (typeof value === 'string') {
+          return value;
+        }
+
+        if (typeof value === 'number' || typeof value === 'boolean') {
+          return String(value);
+        }
+
+        if (value instanceof Date) {
+          return value.toISOString();
+        }
+
+        return '';
       };
+
+      const escape = (value: unknown) =>
+        `"${toCsvCell(value).replace(/"/g, '""')}"`;
 
       const rows = reviews.map((review) =>
         [

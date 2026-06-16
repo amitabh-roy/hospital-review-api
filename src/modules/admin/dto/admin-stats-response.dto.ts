@@ -6,4 +6,5 @@ export class AdminStatsResponseDto {
   unreadMessages!: number;
   flaggedReviews!: number;
   flaggedAccounts!: number;
+  pendingAccountDeletions!: number;
 }

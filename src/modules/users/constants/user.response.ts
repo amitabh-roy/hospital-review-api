@@ -20,5 +20,10 @@ export const USER_RESPONSE = {
   EMAIL_UPDATED: 'Email updated successfully',
   PASSWORD_UPDATED: 'Password updated successfully',
   ACCOUNT_DELETED: 'Account deleted successfully',
+  ACCOUNT_DELETION_REQUESTED: 'Account deletion request submitted for admin review',
+  ACCOUNT_DELETION_ALREADY_PENDING:
+    'You already have a pending account deletion request',
+  ACCOUNT_DELETION_NOT_FOUND: 'Account deletion request not found',
+  ACCOUNT_DELETION_UPDATED: 'Account deletion request updated',
   WRONG_PASSWORD: 'Password is incorrect',
 } as const;

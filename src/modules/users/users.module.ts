@@ -8,6 +8,7 @@ import type { StringValue } from 'ms';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AuthSecurityBootstrap } from '../../config/auth-security.bootstrap';
+import { AccountDeletionRequestModel } from '../../database/models/account-deletion-request.model';
 import { AuthTokenModel } from '../../database/models/auth-token.model';
 import { LoginEventModel } from '../../database/models/login-event.model';
 import { RefreshTokenModel } from '../../database/models/refresh-token.model';
@@ -51,6 +52,7 @@ import { UsersService } from './users.service';
       AuthTokenModel,
       LoginEventModel,
       SavedHospitalModel,
+      AccountDeletionRequestModel,
     ]),
   ],
   controllers: [UsersController],

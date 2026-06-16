@@ -1,4 +1,4 @@
-import { Controller, Get, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Param, ParseIntPipe, Res, UseGuards, Body } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 
@@ -7,6 +7,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../users/interfaces/authenticated-user.interface';
+import { ReviewAccountDeletionDto } from '../users/dto/review-account-deletion.dto';
+import { UsersService } from '../users/users.service';
 import { AdminService } from './admin.service';
 
 @ApiTags('Admin')
@@ -14,7 +16,10 @@ import { AdminService } from './admin.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Get('stats')
   getStats() {
@@ -46,5 +51,18 @@ export class AdminController {
       'attachment; filename="opencurtain-reviews.csv"',
     );
     res.send(csv);
+  }
+
+  @Get('account-deletion-requests')
+  listAccountDeletionRequests() {
+    return this.usersService.listPendingDeletionRequests();
+  }
+
+  @Patch('account-deletion-requests/:id')
+  reviewAccountDeletionRequest(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ReviewAccountDeletionDto,
+  ) {
+    return this.usersService.reviewDeletionRequest(id, dto);
   }
 }
