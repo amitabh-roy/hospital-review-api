@@ -41,6 +41,8 @@ import { SignupDto } from './dto/signup.dto';
 import { UpdateEmailDto } from './dto/update-email.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import type { ControllerResponse } from '../../common/interfaces/controller-response.interface';
+import type { AccountDeletionRequestResponseDto } from './dto/account-deletion-request-response.dto';
 import type { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { UsersService } from './users.service';
 
@@ -155,7 +157,9 @@ export class UsersController {
 
   @Get('me/deletion-request')
   @UseGuards(JwtAuthGuard)
-  getMyDeletionRequest(@CurrentUser() user: AuthenticatedUser) {
+  getMyDeletionRequest(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ControllerResponse<AccountDeletionRequestResponseDto | null>> {
     return this.usersService.getMyDeletionRequest(user);
   }
 
@@ -164,7 +168,7 @@ export class UsersController {
   requestAccountDeletion(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: DeleteAccountDto,
-  ) {
+  ): Promise<ControllerResponse<AccountDeletionRequestResponseDto>> {
     return this.usersService.requestAccountDeletion(user, dto);
   }
 }

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -493,12 +494,18 @@ export class UsersService {
         },
       );
 
+      if (!loaded) {
+        throw new InternalServerErrorException(
+          'Failed to load account deletion request',
+        );
+      }
+
       return {
         message: USER_RESPONSE.ACCOUNT_DELETION_REQUESTED,
-        data: this.toDeletionRequestResponse(loaded!),
+        data: this.toDeletionRequestResponse(loaded),
       };
     } catch (error) {
-      handleDatabaseException(error, {
+      return handleDatabaseException(error, {
         context: UsersService.name,
         operation: 'request account deletion',
       });
@@ -523,7 +530,7 @@ export class UsersService {
         data: request ? this.toDeletionRequestResponse(request) : null,
       };
     } catch (error) {
-      handleDatabaseException(error, {
+      return handleDatabaseException(error, {
         context: UsersService.name,
         operation: 'fetch account deletion request',
       });
