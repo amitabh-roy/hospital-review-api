@@ -72,13 +72,27 @@ module.exports = {
 
   async down(queryInterface) {
     await queryInterface.sequelize.transaction(async (transaction) => {
-      await queryInterface.removeColumn('reviews', 'hourly_rate', { transaction });
-      await queryInterface.removeColumn('reviews', 'patient_ratio', { transaction });
-      await queryInterface.removeColumn('reviews', 'meal_breaks', { transaction });
-      await queryInterface.removeColumn('reviews', 'bathroom_breaks', { transaction });
-      await queryInterface.removeColumn('reviews', 'parking_cost', { transaction });
-      await queryInterface.removeColumn('reviews', 'management_rating', { transaction });
-      await queryInterface.removeColumn('reviews', 'would_return', { transaction });
+      await queryInterface.removeColumn('reviews', 'hourly_rate', {
+        transaction,
+      });
+      await queryInterface.removeColumn('reviews', 'patient_ratio', {
+        transaction,
+      });
+      await queryInterface.removeColumn('reviews', 'meal_breaks', {
+        transaction,
+      });
+      await queryInterface.removeColumn('reviews', 'bathroom_breaks', {
+        transaction,
+      });
+      await queryInterface.removeColumn('reviews', 'parking_cost', {
+        transaction,
+      });
+      await queryInterface.removeColumn('reviews', 'management_rating', {
+        transaction,
+      });
+      await queryInterface.removeColumn('reviews', 'would_return', {
+        transaction,
+      });
     });
   },
 };
