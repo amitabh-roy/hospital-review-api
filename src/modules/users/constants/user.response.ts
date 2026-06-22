@@ -28,4 +28,5 @@ export const USER_RESPONSE = {
   ACCOUNT_DELETION_NOT_FOUND: 'Account deletion request not found',
   ACCOUNT_DELETION_UPDATED: 'Account deletion request updated',
   WRONG_PASSWORD: 'Password is incorrect',
+  ACCOUNT_DEACTIVATED: 'This account has been deleted',
 } as const;

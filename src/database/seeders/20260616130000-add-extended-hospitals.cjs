@@ -1,6 +1,8 @@
 'use strict';
 
-const { syncHospitalAverageRatings } = require('../helpers/sync-hospital-ratings.cjs');
+const {
+  syncHospitalAverageRatings,
+} = require('../helpers/sync-hospital-ratings.cjs');
 
 /**
  * Additive seeder for databases that already ran the original hospital seeds.

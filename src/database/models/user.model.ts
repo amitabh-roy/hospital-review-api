@@ -4,6 +4,7 @@ import {
   Column,
   DataType,
   Default,
+  DeletedAt,
   ForeignKey,
   HasMany,
   Model,
@@ -26,6 +27,7 @@ export type UserVerificationStatus =
 
 @Table({
   tableName: 'users',
+  paranoid: true,
   defaultScope: {
     attributes: { exclude: ['passwordHash'] },
   },
@@ -86,6 +88,14 @@ export class UserModel extends Model {
 
   @HasMany(() => ReviewModel)
   declare reviews?: ReviewModel[];
+
+  @DeletedAt
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'deleted_at',
+  })
+  declare deletedAt: Date | null;
 
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;

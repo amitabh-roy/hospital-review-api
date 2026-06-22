@@ -35,6 +35,12 @@ import { EmailService } from './email.service';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
+const deletionRequestUserInclude = {
+  model: UserModel,
+  paranoid: false,
+  include: [RoleModel],
+};
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -67,9 +73,15 @@ export class UsersService {
         throw new NotFoundException(USER_RESPONSE.ROLE_NOT_FOUND);
       }
 
-      const existingUser = await this.userModel.findOne({ where: { email } });
+      const existingUser = await this.userModel.unscoped().findOne({
+        where: { email },
+      });
 
       if (existingUser) {
+        if (existingUser.deletedAt) {
+          throw new ConflictException(USER_RESPONSE.ACCOUNT_DEACTIVATED);
+        }
+
         throw new ConflictException(USER_RESPONSE.EMAIL_IN_USE);
       }
 
@@ -134,6 +146,17 @@ export class UsersService {
         throw new UnauthorizedException(USER_RESPONSE.INVALID_CREDENTIALS);
       }
 
+      if (user.deletedAt) {
+        await this.recordLoginEvent({
+          email,
+          userId: user.id,
+          success: false,
+          ipAddress: meta?.ipAddress ?? null,
+          userAgent: meta?.userAgent ?? null,
+        });
+        throw new UnauthorizedException(USER_RESPONSE.ACCOUNT_DEACTIVATED);
+      }
+
       const isPasswordValid = await bcrypt.compare(
         dto.password,
         user.passwordHash,
@@ -179,12 +202,16 @@ export class UsersService {
         await this.authTokensService.validateRefreshToken(refreshToken);
       await this.authTokensService.revokeRefreshToken(refreshToken);
 
-      const user = await this.userModel.findByPk(userId, {
+      const user = await this.userModel.unscoped().findByPk(userId, {
         include: [RoleModel],
       });
 
-      if (!user || !user.role) {
-        throw new UnauthorizedException(USER_RESPONSE.USER_NOT_FOUND);
+      if (!user || !user.role || user.deletedAt) {
+        throw new UnauthorizedException(
+          user?.deletedAt
+            ? USER_RESPONSE.ACCOUNT_DEACTIVATED
+            : USER_RESPONSE.USER_NOT_FOUND,
+        );
       }
 
       return {
@@ -388,7 +415,7 @@ export class UsersService {
       );
 
       if (!validPassword) {
-        throw new UnauthorizedException(USER_RESPONSE.WRONG_PASSWORD);
+        throw new BadRequestException(USER_RESPONSE.WRONG_PASSWORD);
       }
 
       const email = dto.email.trim().toLowerCase();
@@ -431,7 +458,7 @@ export class UsersService {
       );
 
       if (!validPassword) {
-        throw new UnauthorizedException(USER_RESPONSE.WRONG_PASSWORD);
+        throw new BadRequestException(USER_RESPONSE.WRONG_PASSWORD);
       }
 
       const saltRounds = this.configService.get<number>('app.saltRounds', 10);
@@ -462,13 +489,17 @@ export class UsersService {
         throw new NotFoundException(USER_RESPONSE.USER_NOT_FOUND);
       }
 
+      if (persisted.deletedAt) {
+        throw new BadRequestException(USER_RESPONSE.ACCOUNT_DEACTIVATED);
+      }
+
       const validPassword = await bcrypt.compare(
         dto.password,
         persisted.passwordHash,
       );
 
       if (!validPassword) {
-        throw new UnauthorizedException(USER_RESPONSE.WRONG_PASSWORD);
+        throw new BadRequestException(USER_RESPONSE.WRONG_PASSWORD);
       }
 
       const existingPending = await this.accountDeletionRequestModel.findOne({
@@ -490,7 +521,7 @@ export class UsersService {
       const loaded = await this.accountDeletionRequestModel.findByPk(
         request.id,
         {
-          include: [{ model: UserModel, include: [RoleModel] }],
+          include: [deletionRequestUserInclude],
         },
       );
 
@@ -521,7 +552,7 @@ export class UsersService {
           userId: user.id,
           status: { [Op.in]: ['pending', 'rejected'] },
         },
-        include: [{ model: UserModel, include: [RoleModel] }],
+        include: [deletionRequestUserInclude],
         order: [['createdAt', 'DESC']],
       });
 
@@ -543,7 +574,7 @@ export class UsersService {
     try {
       const items = await this.accountDeletionRequestModel.findAll({
         where: { status: 'pending' },
-        include: [{ model: UserModel, include: [RoleModel] }],
+        include: [deletionRequestUserInclude],
         order: [['createdAt', 'ASC']],
       });
 
@@ -569,7 +600,7 @@ export class UsersService {
       const request = await this.accountDeletionRequestModel.findByPk(
         requestId,
         {
-          include: [{ model: UserModel, include: [RoleModel] }],
+          include: [deletionRequestUserInclude],
         },
       );
 
@@ -588,7 +619,7 @@ export class UsersService {
       });
 
       await request.reload({
-        include: [{ model: UserModel, include: [RoleModel] }],
+        include: [deletionRequestUserInclude],
       });
 
       return {
@@ -610,22 +641,13 @@ export class UsersService {
       throw new NotFoundException(USER_RESPONSE.USER_NOT_FOUND);
     }
 
+    if (persisted.deletedAt) {
+      return;
+    }
+
     await this.savedHospitalModel.destroy({ where: { userId } });
     await this.authTokensService.revokeAllRefreshTokensForUser(userId);
-
-    const saltRounds = this.configService.get<number>('app.saltRounds', 10);
-    const passwordHash = await bcrypt.hash(
-      `deleted-${userId}-${Date.now()}`,
-      saltRounds,
-    );
-
-    await persisted.update({
-      fullName: 'Deleted User',
-      email: `deleted+${userId}@opencurtain.invalid`,
-      passwordHash,
-      isVerified: false,
-      verificationStatus: 'rejected',
-    });
+    await persisted.destroy();
   }
 
   private toDeletionRequestResponse(

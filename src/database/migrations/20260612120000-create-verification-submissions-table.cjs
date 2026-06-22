@@ -75,7 +75,9 @@ module.exports = {
 
   async down(queryInterface) {
     await queryInterface.sequelize.transaction(async (transaction) => {
-      await queryInterface.dropTable('verification_submissions', { transaction });
+      await queryInterface.dropTable('verification_submissions', {
+        transaction,
+      });
       await queryInterface.sequelize.query(
         'DROP TYPE IF EXISTS "enum_verification_submissions_identity_method";',
         { transaction },

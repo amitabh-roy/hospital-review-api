@@ -59,7 +59,9 @@ module.exports = {
       };
 
       for (const [name, definition] of Object.entries(columns)) {
-        await queryInterface.addColumn('reviews', name, definition, { transaction });
+        await queryInterface.addColumn('reviews', name, definition, {
+          transaction,
+        });
       }
     });
   },
