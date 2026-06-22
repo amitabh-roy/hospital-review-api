@@ -20,6 +20,8 @@ export const USER_RESPONSE = {
   VERIFICATION_UPDATED: 'User verification status updated',
   EMAIL_UPDATED: 'Email updated successfully',
   PASSWORD_UPDATED: 'Password updated successfully',
+  NEW_PASSWORD_SAME_AS_CURRENT:
+    'New password must be different from your current password.',
   ACCOUNT_DELETED: 'Account deleted successfully',
   ACCOUNT_DELETION_REQUESTED:
     'Account deletion request submitted for admin review',

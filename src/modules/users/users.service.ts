@@ -461,6 +461,12 @@ export class UsersService {
         throw new BadRequestException(USER_RESPONSE.WRONG_PASSWORD);
       }
 
+      if (dto.currentPassword === dto.newPassword) {
+        throw new BadRequestException(
+          USER_RESPONSE.NEW_PASSWORD_SAME_AS_CURRENT,
+        );
+      }
+
       const saltRounds = this.configService.get<number>('app.saltRounds', 10);
       const passwordHash = await bcrypt.hash(dto.newPassword, saltRounds);
       await persisted.update({ passwordHash });
