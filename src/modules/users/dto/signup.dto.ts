@@ -7,6 +7,8 @@ import {
   MinLength,
 } from 'class-validator';
 
+import { IsStrongPassword } from '../../../common/validators/is-strong-password.decorator';
+
 export class SignupDto {
   @ApiProperty({
     example: 'Taylor Brooks',
@@ -32,6 +34,7 @@ export class SignupDto {
   @IsString()
   @MinLength(8)
   @MaxLength(72)
+  @IsStrongPassword()
   password: string;
 
   @ApiProperty({

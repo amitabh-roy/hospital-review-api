@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class DeleteAccountDto {
   @ApiProperty({ example: 'current-password' })
@@ -7,11 +7,8 @@ export class DeleteAccountDto {
   @IsNotEmpty()
   password: string;
 
-  @ApiProperty({
-    example: 'I no longer work in healthcare and do not need this account.',
-  })
+  @ApiProperty({ example: 'I no longer need this account.' })
   @IsString()
   @IsNotEmpty()
-  @MinLength(10)
   reason: string;
 }
