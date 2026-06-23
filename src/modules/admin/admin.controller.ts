@@ -4,6 +4,7 @@ import {
   Patch,
   Param,
   ParseIntPipe,
+  Query,
   Res,
   UseGuards,
   Body,
@@ -18,6 +19,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../users/interfaces/authenticated-user.interface';
 import { ReviewAccountDeletionDto } from '../users/dto/review-account-deletion.dto';
 import { UsersService } from '../users/users.service';
+import { AdminSecurityQueryDto } from './dto/admin-security-query.dto';
 import { AdminService } from './admin.service';
 
 @ApiTags('Admin')
@@ -46,8 +48,11 @@ export class AdminController {
   }
 
   @Get('security')
-  getSecurityActivity(@CurrentUser() user: AuthenticatedUser) {
-    return this.adminService.getSecurityActivity(user);
+  getSecurityActivity(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: AdminSecurityQueryDto,
+  ) {
+    return this.adminService.getSecurityActivity(user, query);
   }
 
   @Get('export/reviews')
