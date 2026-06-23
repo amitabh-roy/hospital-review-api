@@ -15,6 +15,8 @@ import { UserModel } from '../../database/models/user.model';
 import { VerificationSubmissionModel } from '../../database/models/verification-submission.model';
 import { UnitModel } from '../../database/models/unit.model';
 import { ADMIN_RESPONSE } from './constants/admin.response';
+import { AdminSecurityQueryDto } from './dto/admin-security-query.dto';
+import { AdminSecurityResponseDto } from './dto/admin-security-response.dto';
 import { AdminStatsResponseDto } from './dto/admin-stats-response.dto';
 import { AdminUserResponseDto } from './dto/admin-user-response.dto';
 import { AuthenticatedUser } from '../users/interfaces/authenticated-user.interface';
@@ -183,27 +185,21 @@ export class AdminService {
     }
   }
 
-  async getSecurityActivity(admin: AuthenticatedUser): Promise<
-    ControllerResponse<{
-      adminProfile: {
-        email: string;
-        fullName: string;
-        updatedAt: Date;
-      };
-      recentLogins: Array<{
-        id: number;
-        email: string;
-        success: boolean;
-        ipAddress: string | null;
-        userAgent: string | null;
-        createdAt: Date;
-      }>;
-      platformEvents: PlatformEvent[];
-    }>
-  > {
+  async getSecurityActivity(
+    admin: AuthenticatedUser,
+    query: AdminSecurityQueryDto,
+  ): Promise<ControllerResponse<AdminSecurityResponseDto>> {
     try {
+      const loginPage = query.loginPage ?? 1;
+      const loginLimit = query.loginLimit ?? 10;
+      const eventsPage = query.eventsPage ?? 1;
+      const eventsLimit = query.eventsLimit ?? 10;
+      const loginOffset = (loginPage - 1) * loginLimit;
+      const eventsOffset = (eventsPage - 1) * eventsLimit;
+
       const [
         adminUser,
+        loginTotal,
         recentLogins,
         recentUsers,
         recentReviews,
@@ -212,24 +208,26 @@ export class AdminService {
         recentDeletionRequests,
       ] = await Promise.all([
         this.userModel.findByPk(admin.id),
+        this.loginEventModel.count(),
         this.loginEventModel.findAll({
           order: [['createdAt', 'DESC']],
-          limit: 50,
+          limit: loginLimit,
+          offset: loginOffset,
         }),
         this.userModel.findAll({
           include: [RoleModel],
           order: [['createdAt', 'DESC']],
-          limit: 10,
+          limit: 100,
         }),
         this.reviewModel.findAll({
           include: [HospitalModel, UserModel],
           order: [['createdAt', 'DESC']],
-          limit: 10,
+          limit: 100,
         }),
         this.verificationModel.findAll({
           include: [UserModel],
           order: [['createdAt', 'DESC']],
-          limit: 10,
+          limit: 100,
         }),
         this.reviewReportModel.findAll({
           include: [
@@ -239,17 +237,17 @@ export class AdminService {
             },
           ],
           order: [['createdAt', 'DESC']],
-          limit: 10,
+          limit: 100,
         }),
         this.accountDeletionRequestModel.findAll({
           where: { status: 'pending' },
           include: [UserModel],
           order: [['createdAt', 'DESC']],
-          limit: 10,
+          limit: 100,
         }),
       ]);
 
-      const platformEvents: PlatformEvent[] = [
+      const allPlatformEvents: PlatformEvent[] = [
         ...recentUsers
           .filter((user) => user.role?.name !== 'admin')
           .map((user) => ({
@@ -282,9 +280,12 @@ export class AdminService {
           description: `Account deletion requested — ${request.user?.fullName ?? `User #${request.userId}`}`,
           createdAt: request.createdAt,
         })),
-      ]
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-        .slice(0, 25);
+      ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+      const platformEvents = allPlatformEvents.slice(
+        eventsOffset,
+        eventsOffset + eventsLimit,
+      );
 
       return {
         message: ADMIN_RESPONSE.SECURITY_FETCHED,
@@ -294,15 +295,25 @@ export class AdminService {
             fullName: adminUser?.fullName ?? admin.fullName,
             updatedAt: adminUser?.updatedAt ?? admin.updatedAt,
           },
-          recentLogins: recentLogins.map((event) => ({
-            id: event.id,
-            email: event.email,
-            success: event.success,
-            ipAddress: event.ipAddress,
-            userAgent: event.userAgent,
-            createdAt: event.createdAt,
-          })),
-          platformEvents,
+          recentLogins: {
+            items: recentLogins.map((event) => ({
+              id: event.id,
+              email: event.email,
+              success: event.success,
+              ipAddress: event.ipAddress,
+              userAgent: event.userAgent,
+              createdAt: event.createdAt,
+            })),
+            total: loginTotal,
+            page: loginPage,
+            limit: loginLimit,
+          },
+          platformEvents: {
+            items: platformEvents,
+            total: allPlatformEvents.length,
+            page: eventsPage,
+            limit: eventsLimit,
+          },
         },
       };
     } catch (error) {
