@@ -7,4 +7,6 @@ export const VERIFICATION_RESPONSE = {
   UPDATED: 'Verification decision recorded successfully',
   FILES_REQUIRED: 'Badge and identity files are required',
   INVALID_IDENTITY_METHOD: 'Identity method must be selfie or license',
+  INVALID_BADGE_FILE_TYPE: 'Badge file must be JPG, PNG, PDF, or HEIC',
+  INVALID_IDENTITY_FILE_TYPE: 'Identity file must be JPG, PNG, or HEIC',
 } as const;

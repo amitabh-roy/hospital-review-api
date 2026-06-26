@@ -7,6 +7,11 @@ import { InjectModel } from '@nestjs/sequelize';
 
 import { TempFileStorageService } from '../../common/services/temp-file-storage.service';
 import { assertSelfieLiveness } from '../../common/utils/selfie-liveness.util';
+import {
+  assertVerificationBadgeFile,
+  assertVerificationLicenseFile,
+  assertVerificationSelfieFile,
+} from '../../common/utils/verification-upload.util';
 import { ControllerResponse } from '../../common/interfaces/controller-response.interface';
 import { handleDatabaseException } from '../../common/utils/database-exception.util';
 import { RoleModel } from '../../database/models/role.model';
@@ -38,8 +43,13 @@ export class VerificationService {
     captureTimestamp?: string,
   ): Promise<ControllerResponse<VerificationSubmissionResponseDto>> {
     try {
+      assertVerificationBadgeFile(badgeFile);
+
       if (identityMethod === 'selfie') {
+        assertVerificationSelfieFile(identityFile);
         assertSelfieLiveness(identityFile, captureTimestamp);
+      } else {
+        assertVerificationLicenseFile(identityFile);
       }
 
       if (user.verificationStatus === 'verified') {

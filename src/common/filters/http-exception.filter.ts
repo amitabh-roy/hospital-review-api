@@ -6,6 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { MulterError } from 'multer';
 
 import { API_RESPONSE } from '../constants/api-response.constants';
 import { ApiResponse } from '../interfaces/api-response.interface';
@@ -34,6 +35,30 @@ export class HttpExceptionFilter implements ExceptionFilter {
     message: string;
     errors: string[];
   } {
+    if (exception instanceof MulterError) {
+      if (exception.code === 'LIMIT_FILE_SIZE') {
+        return {
+          statusCode: HttpStatus.PAYLOAD_TOO_LARGE,
+          message: 'Uploaded file is too large. Please use a smaller image.',
+          errors: [],
+        };
+      }
+
+      return {
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Unable to process uploaded files.',
+        errors: [],
+      };
+    }
+
+    if (this.isPayloadTooLargeError(exception)) {
+      return {
+        statusCode: HttpStatus.PAYLOAD_TOO_LARGE,
+        message: 'Upload is too large. Please use smaller images.',
+        errors: [],
+      };
+    }
+
     if (!(exception instanceof HttpException)) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -62,6 +87,34 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const message = this.extractMessage(body, errors, statusCode);
 
     return { statusCode, message, errors };
+  }
+
+  private isPayloadTooLargeError(exception: unknown): boolean {
+    if (!exception || typeof exception !== 'object') {
+      return false;
+    }
+
+    const candidate = exception as {
+      type?: string;
+      status?: number;
+      statusCode?: number;
+      message?: string;
+    };
+
+    if (candidate.type === 'entity.too.large') {
+      return true;
+    }
+
+    const status = candidate.status ?? candidate.statusCode;
+
+    if (status === HttpStatus.PAYLOAD_TOO_LARGE) {
+      return true;
+    }
+
+    return (
+      typeof candidate.message === 'string' &&
+      candidate.message.toLowerCase().includes('entity too large')
+    );
   }
 
   private extractErrors(body: Record<string, unknown>): string[] {
