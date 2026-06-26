@@ -22,6 +22,8 @@ export const USER_RESPONSE = {
   PASSWORD_UPDATED: 'Password updated successfully',
   NEW_PASSWORD_SAME_AS_CURRENT:
     'New password must be different from your current password.',
+  NEW_EMAIL_SAME_AS_CURRENT:
+    'New email must be different from your current email.',
   ACCOUNT_DELETED: 'Account deleted successfully',
   ACCOUNT_DELETION_REQUESTED:
     'Account deletion request submitted for admin review',
