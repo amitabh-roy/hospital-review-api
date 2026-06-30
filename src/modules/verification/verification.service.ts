@@ -1,12 +1,18 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 
-import { TempFileStorageService } from '../../common/services/temp-file-storage.service';
+import { S3StorageService } from '../../common/services/s3-storage.service';
 import { assertSelfieLiveness } from '../../common/utils/selfie-liveness.util';
+import {
+  assertVerificationBadgeFile,
+  assertVerificationLicenseFile,
+  assertVerificationSelfieFile,
+} from '../../common/utils/verification-upload.util';
 import { ControllerResponse } from '../../common/interfaces/controller-response.interface';
 import { handleDatabaseException } from '../../common/utils/database-exception.util';
 import { RoleModel } from '../../database/models/role.model';
@@ -22,12 +28,14 @@ import { VerificationSubmissionResponseDto } from './dto/verification-submission
 
 @Injectable()
 export class VerificationService {
+  private readonly logger = new Logger(VerificationService.name);
+
   constructor(
     @InjectModel(VerificationSubmissionModel)
     private readonly verificationModel: typeof VerificationSubmissionModel,
     @InjectModel(UserModel)
     private readonly userModel: typeof UserModel,
-    private readonly tempFileStorage: TempFileStorageService,
+    private readonly s3Storage: S3StorageService,
   ) {}
 
   async submit(
@@ -38,8 +46,13 @@ export class VerificationService {
     captureTimestamp?: string,
   ): Promise<ControllerResponse<VerificationSubmissionResponseDto>> {
     try {
+      assertVerificationBadgeFile(badgeFile);
+
       if (identityMethod === 'selfie') {
+        assertVerificationSelfieFile(identityFile);
         assertSelfieLiveness(identityFile, captureTimestamp);
+      } else {
+        assertVerificationLicenseFile(identityFile);
       }
 
       if (user.verificationStatus === 'verified') {
@@ -54,13 +67,17 @@ export class VerificationService {
         throw new BadRequestException(VERIFICATION_RESPONSE.ALREADY_PENDING);
       }
 
-      const badgeFilePath = await this.tempFileStorage.saveUploadedFile(
-        badgeFile,
-        'badge',
-      );
-      const identityFilePath = await this.tempFileStorage.saveUploadedFile(
-        identityFile,
-        'identity',
+      const badgeFilePath = await this.s3Storage.uploadFile(badgeFile, {
+        folder: 'verifications',
+        namePrefix: 'badge',
+      });
+      const identityFilePath = await this.s3Storage.uploadFile(identityFile, {
+        folder: 'verifications',
+        namePrefix: 'identity',
+      });
+
+      this.logger.log(
+        `Verification files stored for userId=${user.id}: badgeKey=${badgeFilePath}, badgeUrl=${this.s3Storage.getObjectUrl(badgeFilePath)}, identityKey=${identityFilePath}, identityUrl=${this.s3Storage.getObjectUrl(identityFilePath)}`,
       );
 
       const submission = await this.verificationModel.create({
@@ -126,10 +143,7 @@ export class VerificationService {
       throw new NotFoundException(VERIFICATION_RESPONSE.NOT_FOUND);
     }
 
-    const buffer = await this.tempFileStorage.readFile(filePath);
-    const mimeType = this.guessMimeType(filePath);
-
-    return { buffer, mimeType };
+    return this.s3Storage.readFile(filePath);
   }
 
   async review(
@@ -151,7 +165,7 @@ export class VerificationService {
         );
       }
 
-      await this.tempFileStorage.deleteFiles([
+      await this.s3Storage.deleteFiles([
         submission.badgeFilePath,
         submission.identityFilePath,
       ]);
@@ -221,16 +235,5 @@ export class VerificationService {
       createdAt: submission.createdAt,
       updatedAt: submission.updatedAt,
     };
-  }
-
-  private guessMimeType(filePath: string): string {
-    const lower = filePath.toLowerCase();
-
-    if (lower.endsWith('.png')) return 'image/png';
-    if (lower.endsWith('.webp')) return 'image/webp';
-    if (lower.endsWith('.heic')) return 'image/heic';
-    if (lower.endsWith('.pdf')) return 'application/pdf';
-
-    return 'image/jpeg';
   }
 }

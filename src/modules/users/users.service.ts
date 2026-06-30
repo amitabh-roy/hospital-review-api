@@ -419,6 +419,11 @@ export class UsersService {
       }
 
       const email = dto.email.trim().toLowerCase();
+
+      if (email === persisted.email.trim().toLowerCase()) {
+        throw new BadRequestException(USER_RESPONSE.NEW_EMAIL_SAME_AS_CURRENT);
+      }
+
       const existing = await this.userModel.findOne({ where: { email } });
 
       if (existing && existing.id !== user.id) {

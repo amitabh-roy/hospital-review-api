@@ -21,11 +21,14 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import uploadConfig from '../../config/upload.config';
 import { IDENTITY_METHODS } from '../../database/models/verification-submission.model';
 import type { AuthenticatedUser } from '../users/interfaces/authenticated-user.interface';
 import { VERIFICATION_RESPONSE } from './constants/verification.response';
 import { ReviewVerificationDto } from './dto/review-verification.dto';
 import { VerificationService } from './verification.service';
+
+const verificationUploadLimits = uploadConfig();
 
 @ApiTags('Verification')
 @Controller()
@@ -42,7 +45,7 @@ export class VerificationController {
       ],
       {
         storage: memoryStorage(),
-        limits: { fileSize: 10 * 1024 * 1024 },
+        limits: { fileSize: verificationUploadLimits.maxFileSizeBytes },
       },
     ),
   )

@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
-import { TempFileStorageService } from '../../common/services/temp-file-storage.service';
 import { RoleModel } from '../../database/models/role.model';
 import { UserModel } from '../../database/models/user.model';
 import { VerificationSubmissionModel } from '../../database/models/verification-submission.model';
@@ -19,7 +18,7 @@ import { VerificationService } from './verification.service';
     ]),
   ],
   controllers: [VerificationController],
-  providers: [VerificationService, TempFileStorageService],
+  providers: [VerificationService],
   exports: [VerificationService],
 })
 export class VerificationModule {}
