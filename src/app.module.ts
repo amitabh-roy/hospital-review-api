@@ -2,10 +2,12 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 
+import { StorageModule } from './common/modules/storage.module';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import appConfig from './config/app.config';
 import authConfig from './config/auth.config';
 import emailConfig from './config/email.config';
+import s3Config from './config/s3.config';
 import uploadConfig from './config/upload.config';
 import { validate } from './config/env.validation';
 import { DatabaseModule } from './database/database.module';
@@ -25,7 +27,14 @@ import databaseConfig from './database/database.config';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, authConfig, emailConfig, uploadConfig, databaseConfig],
+      load: [
+        appConfig,
+        authConfig,
+        emailConfig,
+        uploadConfig,
+        s3Config,
+        databaseConfig,
+      ],
       validate,
     }),
     ThrottlerModule.forRoot([
@@ -34,6 +43,7 @@ import databaseConfig from './database/database.config';
         limit: 100,
       },
     ]),
+    StorageModule,
     DatabaseModule,
     UsersModule,
     RolesModule,

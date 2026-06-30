@@ -9,7 +9,13 @@ const BADGE_ALLOWED_EXTENSIONS = new Set([
   '.heif',
 ]);
 
-const LICENSE_ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.heic', '.heif']);
+const LICENSE_ALLOWED_EXTENSIONS = new Set([
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.heic',
+  '.heif',
+]);
 
 const BADGE_ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -78,6 +84,8 @@ export function assertVerificationSelfieFile(file: Express.Multer.File): void {
   const mimeType = (file.mimetype ?? '').trim().toLowerCase();
 
   if (mimeType !== 'image/jpeg') {
-    throw new BadRequestException('Selfie must be a live JPEG image from your camera.');
+    throw new BadRequestException(
+      'Selfie must be a live JPEG image from your camera.',
+    );
   }
 }
