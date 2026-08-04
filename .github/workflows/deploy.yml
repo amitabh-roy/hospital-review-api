@@ -62,10 +62,11 @@ jobs:
             docker pull ${{ steps.ecr-login.outputs.registry }}/opencurtain/api:$IMAGE_TAG
             docker stop opencurtain-api || true
             docker rm opencurtain-api || true
+            
             docker run -d --name opencurtain-api \
               -p 3001:3001 \
               --restart unless-stopped \
-              ${{ steps.ecr-login.outputs.re`gistry }}/opencurtain/api:$IMAGE_TAG
+              ${{ steps.ecr-login.outputs.registry }}/opencurtain/api:$IMAGE_TAG
 
             if [ -n "$OLD_IMAGE" ]; then
               docker rmi "$OLD_IMAGE" || true
