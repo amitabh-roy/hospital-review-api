@@ -68,6 +68,13 @@ jobs:
               -p 3001:3001 \
               --restart unless-stopped \
               ${{ steps.ecr-login.outputs.registry }}/opencurtain/api:$IMAGE_TAG
+            
+            sleep 5
+            echo "Running DB migrations..."
+            docker exec opencurtain-api npm run db:migrate
+
+            echo "Running DB seed..."
+            docker exec opencurtain-api npm run db:seed
 
             if [ -n "$OLD_IMAGE" ]; then
               docker rmi "$OLD_IMAGE" || true
