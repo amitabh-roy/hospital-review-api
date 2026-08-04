@@ -35,6 +35,7 @@ jobs:
       - name: Creating env file
         run: |
           echo "${{secrets.ENV_FILE}}" > .env
+          ls -la
 
       - name: Build and push image
         env:
@@ -62,7 +63,7 @@ jobs:
             docker pull ${{ steps.ecr-login.outputs.registry }}/opencurtain/api:$IMAGE_TAG
             docker stop opencurtain-api || true
             docker rm opencurtain-api || true
-            
+
             docker run -d --name opencurtain-api \
               -p 3001:3001 \
               --restart unless-stopped \
