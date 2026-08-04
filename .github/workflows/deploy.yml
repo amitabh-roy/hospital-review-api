@@ -65,7 +65,6 @@ jobs:
             docker rm opencurtain-api || true
 
             docker run -d --name opencurtain-api \
-              --env-file .env \
               -p 3001:3001 \
               --restart unless-stopped \
               ${{ steps.ecr-login.outputs.registry }}/opencurtain/api:$IMAGE_TAG
