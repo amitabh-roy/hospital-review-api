@@ -60,14 +60,14 @@ jobs:
 
             OLD_IMAGE=$(docker inspect --format='{{.Image}}' opencurtain-api 2>/dev/null || true)
 
-            docker pull ${{ steps.ecr-login.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+            docker pull ${{ steps.ecr-login.outputs.registry }}/opencurtain/api/production:$IMAGE_TAG
             docker stop opencurtain-api || true
             docker rm opencurtain-api || true
 
             docker run -d --name opencurtain-api \
               -p 3001:3001 \
               --restart unless-stopped \
-              ${{ steps.ecr-login.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+              ${{ steps.ecr-login.outputs.registry }}/opencurtain/api/production:$IMAGE_TAG
             
             sleep 5
             echo "Running DB migrations..."
