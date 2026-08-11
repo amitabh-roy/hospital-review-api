@@ -70,7 +70,7 @@ jobs:
               ${{ steps.ecr-login.outputs.registry }}/opencurtain/api/production:$IMAGE_TAG
             
             sleep 5
-            echo "Running DB migrations..."
+            echo "Running DB migrations...."
             docker exec opencurtain-api npm run db:migrate
 
             echo "Running DB seed..."
