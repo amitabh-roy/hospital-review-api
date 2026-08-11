@@ -12,7 +12,7 @@ permissions:
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
-  ECR_REPOSITORY: opencurtain/api
+  ECR_REPOSITORY: opencurtain/api/production
   CONTAINER_NAME: opencurtain-api
   SNS_TOPIC_ARN: ${{ secrets.SNS_TOPIC_ARN }}
 
