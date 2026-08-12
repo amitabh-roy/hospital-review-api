@@ -73,7 +73,7 @@ jobs:
             echo "Running DB migrations...."
             docker exec opencurtain-api npm run db:migrate
 
-            echo "Running DB seed..."
+            echo "Running DB seed...."
             docker exec opencurtain-api npm run db:seed
 
             if [ -n "$OLD_IMAGE" ]; then
