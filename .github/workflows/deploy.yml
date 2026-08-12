@@ -64,7 +64,10 @@ jobs:
             docker stop opencurtain-api || true
             docker rm opencurtain-api || true
 
+            docker network create opencurtain-net || true
+
             docker run -d --name opencurtain-api \
+              --network opencurtain-net \
               -p 3001:3001 \
               --restart unless-stopped \
               ${{ steps.ecr-login.outputs.registry }}/opencurtain/api/production:$IMAGE_TAG
