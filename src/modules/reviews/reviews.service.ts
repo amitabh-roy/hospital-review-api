@@ -31,7 +31,13 @@ import {
 import { HospitalReviewsResponseDto } from './dto/hospital-reviews-response.dto';
 import { ListHospitalReviewsQueryDto } from './dto/list-hospital-reviews-query.dto';
 import { ReviewResponseDto } from './dto/review-response.dto';
-import { EmailService } from '../users/email.service';
+import { EmailService } from '../../common/services/email.service';
+import {
+  getReviewSubmittedEmailTemplate,
+  getReviewApprovedEmailTemplate,
+  getReviewRejectedEmailTemplate,
+  getReviewFeedbackEmailTemplate,
+} from '../../common/email-templates/review.templates';
 import { AuthenticatedUser } from '../users/interfaces/authenticated-user.interface';
 
 @Injectable()
@@ -112,7 +118,11 @@ export class ReviewsService {
         throw new NotFoundException(REVIEW_RESPONSE.NOT_FOUND);
       }
 
-      this.emailService.sendReviewSubmittedEmail(user.email, hospital.name);
+      const submittedTemplate = getReviewSubmittedEmailTemplate(hospital.name);
+      this.emailService.sendMail({
+        to: user.email,
+        ...submittedTemplate,
+      });
 
       return {
         message: REVIEW_RESPONSE.CREATED,
@@ -459,11 +469,14 @@ export class ReviewsService {
       });
 
       if (review.user?.email) {
-        this.emailService.sendReviewFeedbackEmail(
-          review.user.email,
+        const feedbackTemplate = getReviewFeedbackEmailTemplate(
           review.hospital?.name ?? '',
           feedback,
         );
+        this.emailService.sendMail({
+          to: review.user.email,
+          ...feedbackTemplate,
+        });
       }
 
       return {
@@ -503,15 +516,17 @@ export class ReviewsService {
         const hospitalName = review.hospital?.name ?? '';
 
         if (status === 'approved') {
-          this.emailService.sendReviewApprovedEmail(
-            review.user.email,
-            hospitalName,
-          );
+          const approvedTemplate = getReviewApprovedEmailTemplate(hospitalName);
+          this.emailService.sendMail({
+            to: review.user.email,
+            ...approvedTemplate,
+          });
         } else if (status === 'rejected') {
-          this.emailService.sendReviewRejectedEmail(
-            review.user.email,
-            hospitalName,
-          );
+          const rejectedTemplate = getReviewRejectedEmailTemplate(hospitalName);
+          this.emailService.sendMail({
+            to: review.user.email,
+            ...rejectedTemplate,
+          });
         }
       }
 
