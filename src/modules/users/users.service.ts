@@ -31,7 +31,12 @@ import { LoginDto } from './dto/login.dto';
 import { SignupDto } from './dto/signup.dto';
 import { UpdateEmailDto } from './dto/update-email.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
-import { EmailService } from './email.service';
+import { EmailService } from '../../common/services/email.service';
+import {
+  getWelcomeEmailTemplate,
+  getVerificationEmailTemplate,
+  getPasswordResetEmailTemplate,
+} from '../../common/email-templates/auth.templates';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
@@ -106,10 +111,11 @@ export class UsersService {
       }
 
       await this.sendVerificationEmail(persistedUser);
-      this.emailService.sendWelcomeEmail(
-        persistedUser.email,
-        persistedUser.fullName,
-      );
+      const welcomeTemplate = getWelcomeEmailTemplate(persistedUser.fullName);
+      this.emailService.sendMail({
+        to: persistedUser.email,
+        ...welcomeTemplate,
+      });
 
       return {
         message: USER_RESPONSE.SIGNUP_SUCCESS,
@@ -315,7 +321,12 @@ export class UsersService {
           user.id,
           'password_reset',
         );
-        this.emailService.sendPasswordResetEmail(user.email, token);
+        const link = this.buildLink('/reset-password', token);
+        const resetTemplate = getPasswordResetEmailTemplate(link);
+        this.emailService.sendMail({
+          to: user.email,
+          ...resetTemplate,
+        });
       }
 
       return {
@@ -678,6 +689,13 @@ export class UsersService {
     };
   }
 
+  private buildLink(path: string, token: string): string {
+    const baseUrl = this.configService
+      .get<string>('auth.appPublicUrl', 'http://localhost:3000')
+      .replace(/\/$/, '');
+    return `${baseUrl}${path}?token=${encodeURIComponent(token)}`;
+  }
+
   private async recordLoginEvent(input: {
     email: string;
     userId: number | null;
@@ -703,7 +721,12 @@ export class UsersService {
       user.id,
       'email_verification',
     );
-    this.emailService.sendVerificationEmail(user.email, token);
+    const link = this.buildLink('/verify-email', token);
+    const verifyTemplate = getVerificationEmailTemplate(link);
+    this.emailService.sendMail({
+      to: user.email,
+      ...verifyTemplate,
+    });
   }
 
   private async buildAuthResponse(
