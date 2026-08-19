@@ -7,6 +7,7 @@ import {
   PrimaryKey,
   Table,
   Unique,
+  DeletedAt,
 } from 'sequelize-typescript';
 
 import { ReviewModel } from './review.model';
@@ -15,6 +16,7 @@ import { UserModel } from './user.model';
 @Table({
   tableName: 'roles',
   timestamps: false,
+  paranoid: true,
 })
 export class RoleModel extends Model {
   @PrimaryKey
@@ -34,4 +36,12 @@ export class RoleModel extends Model {
 
   @HasMany(() => ReviewModel)
   declare reviews?: ReviewModel[];
+
+  @DeletedAt
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'deleted_at',
+  })
+  declare deletedAt: Date | null;
 }

@@ -8,6 +8,7 @@ import {
   Model,
   PrimaryKey,
   Table,
+  DeletedAt,
 } from 'sequelize-typescript';
 
 import { HospitalModel } from './hospital.model';
@@ -363,4 +364,12 @@ export class ReviewModel extends Model {
 
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
+
+  @DeletedAt
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'deleted_at',
+  })
+  declare deletedAt: Date | null;
 }

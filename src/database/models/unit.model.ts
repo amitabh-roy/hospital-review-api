@@ -8,6 +8,7 @@ import {
   PrimaryKey,
   Table,
   Unique,
+  DeletedAt,
 } from 'sequelize-typescript';
 
 import { HospitalModel } from './hospital.model';
@@ -17,6 +18,7 @@ import { ReviewModel } from './review.model';
 @Table({
   tableName: 'units',
   timestamps: false,
+  paranoid: true,
 })
 export class UnitModel extends Model {
   @PrimaryKey
@@ -39,4 +41,12 @@ export class UnitModel extends Model {
 
   @HasMany(() => ReviewModel)
   declare reviews?: ReviewModel[];
+
+  @DeletedAt
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'deleted_at',
+  })
+  declare deletedAt: Date | null;
 }

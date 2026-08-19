@@ -7,6 +7,7 @@ import {
   Model,
   PrimaryKey,
   Table,
+  DeletedAt,
 } from 'sequelize-typescript';
 
 import { HospitalModel } from './hospital.model';
@@ -58,4 +59,12 @@ export class HospitalUnitModel extends Model {
 
   @BelongsTo(() => UnitModel)
   declare unit?: UnitModel;
+
+  @DeletedAt
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'deleted_at',
+  })
+  declare deletedAt: Date | null;
 }
