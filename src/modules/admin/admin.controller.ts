@@ -8,6 +8,8 @@ import {
   Res,
   UseGuards,
   Body,
+  Post,
+  Delete,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
@@ -21,6 +23,9 @@ import { ReviewAccountDeletionDto } from '../users/dto/review-account-deletion.d
 import { UsersService } from '../users/users.service';
 import { AdminSecurityQueryDto } from './dto/admin-security-query.dto';
 import { AdminService } from './admin.service';
+import { AdminHospitalQueryDto } from './dto/admin-hospital-query.dto';
+import { CreateHospitalDto } from './dto/create-hospital.dto';
+import { UpdateHospitalDto } from './dto/update-hospital.dto';
 
 @ApiTags('Admin')
 @Controller('admin')
@@ -78,5 +83,33 @@ export class AdminController {
     @Body() dto: ReviewAccountDeletionDto,
   ) {
     return this.usersService.reviewDeletionRequest(id, dto);
+  }
+
+  @Get('hospitals')
+  listHospitals(@Query() query: AdminHospitalQueryDto) {
+    return this.adminService.listHospitals(query);
+  }
+
+  @Get('hospitals/:id')
+  getHospital(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.getHospital(id);
+  }
+
+  @Post('hospitals')
+  createHospital(@Body() dto: CreateHospitalDto) {
+    return this.adminService.createHospital(dto);
+  }
+
+  @Patch('hospitals/:id')
+  updateHospital(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateHospitalDto,
+  ) {
+    return this.adminService.updateHospital(id, dto);
+  }
+
+  @Delete('hospitals/:id')
+  deleteHospital(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.deleteHospital(id);
   }
 }

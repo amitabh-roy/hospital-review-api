@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { col, fn, Op } from 'sequelize';
 
@@ -19,6 +19,9 @@ import { AdminSecurityQueryDto } from './dto/admin-security-query.dto';
 import { AdminSecurityResponseDto } from './dto/admin-security-response.dto';
 import { AdminStatsResponseDto } from './dto/admin-stats-response.dto';
 import { AdminUserResponseDto } from './dto/admin-user-response.dto';
+import { CreateHospitalDto } from './dto/create-hospital.dto';
+import { UpdateHospitalDto } from './dto/update-hospital.dto';
+import { AdminHospitalQueryDto } from './dto/admin-hospital-query.dto';
 import { AuthenticatedUser } from '../users/interfaces/authenticated-user.interface';
 
 type PlatformEvent = {
@@ -393,6 +396,142 @@ export class AdminService {
       handleDatabaseException(error, {
         context: AdminService.name,
         operation: 'review export',
+      });
+    }
+  }
+
+  async listHospitals(query: AdminHospitalQueryDto): Promise<ControllerResponse<any>> {
+    try {
+      const { page = 1, limit = 10, search } = query;
+      const offset = (page - 1) * limit;
+
+      const whereClause: any = {};
+      if (search) {
+        whereClause[Op.or] = [
+          { name: { [Op.iLike]: `%${search}%` } },
+          { city: { [Op.iLike]: `%${search}%` } },
+          { state: { [Op.iLike]: `%${search}%` } },
+          { cmsId: { [Op.iLike]: `%${search}%` } },
+        ];
+      }
+
+      const { rows, count } = await this.hospitalModel.findAndCountAll({
+        where: whereClause,
+        order: [['createdAt', 'DESC']],
+        limit,
+        offset,
+      });
+
+      return {
+        message: ADMIN_RESPONSE.HOSPITALS_FETCHED,
+        data: {
+          items: rows,
+          total: count,
+          page,
+          limit,
+        },
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: AdminService.name,
+        operation: 'list hospitals',
+      });
+    }
+  }
+
+  async getHospital(id: number): Promise<ControllerResponse<any>> {
+    try {
+      const hospital = await this.hospitalModel.findByPk(id, {
+        include: [
+          {
+            model: UnitModel,
+            through: { attributes: [] }
+          }
+        ]
+      });
+
+      if (!hospital) {
+        throw new NotFoundException(ADMIN_RESPONSE.HOSPITAL_NOT_FOUND);
+      }
+
+      return {
+        message: ADMIN_RESPONSE.HOSPITAL_FETCHED,
+        data: hospital,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: AdminService.name,
+        operation: 'get hospital',
+      });
+    }
+  }
+
+  async createHospital(dto: CreateHospitalDto): Promise<ControllerResponse<any>> {
+    try {
+      const hospital = await this.hospitalModel.create({
+        cmsId: dto.cmsId,
+        name: dto.name,
+        city: dto.city,
+        state: dto.state,
+        facilityType: dto.facilityType,
+        source: dto.source || 'MANUAL',
+        isActive: dto.isActive !== undefined ? dto.isActive : true,
+      } as any);
+
+      return {
+        message: ADMIN_RESPONSE.HOSPITAL_CREATED,
+        data: hospital,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: AdminService.name,
+        operation: 'create hospital',
+      });
+    }
+  }
+
+  async updateHospital(id: number, dto: UpdateHospitalDto): Promise<ControllerResponse<any>> {
+    try {
+      const hospital = await this.hospitalModel.findByPk(id);
+
+      if (!hospital) {
+        throw new NotFoundException(ADMIN_RESPONSE.HOSPITAL_NOT_FOUND);
+      }
+
+      await hospital.update({
+        ...dto
+      });
+
+      return {
+        message: ADMIN_RESPONSE.HOSPITAL_UPDATED,
+        data: hospital,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: AdminService.name,
+        operation: 'update hospital',
+      });
+    }
+  }
+
+  async deleteHospital(id: number): Promise<ControllerResponse<any>> {
+    try {
+      const hospital = await this.hospitalModel.findByPk(id);
+
+      if (!hospital) {
+        throw new NotFoundException(ADMIN_RESPONSE.HOSPITAL_NOT_FOUND);
+      }
+
+      await hospital.destroy();
+
+      return {
+        message: ADMIN_RESPONSE.HOSPITAL_DELETED,
+        data: null,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: AdminService.name,
+        operation: 'delete hospital',
       });
     }
   }

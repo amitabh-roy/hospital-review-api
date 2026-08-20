@@ -3,7 +3,7 @@ name: Backend CI/CD
 on:
   push:
     branches:
-      - development
+      - release/production
 
 permissions:
   id-token: write
@@ -34,7 +34,7 @@ jobs:
 
       - name: Creating env file
         run: |
-          echo "${{secrets.ENV_FILE_DEV}}" > .env
+          echo "${{secrets.ENV_FILE}}" > .env
           ls -la
 
       - name: Build and push image
@@ -51,7 +51,7 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.LIGHTSAIL_IP_DEV }}
+          host: ${{ secrets.LIGHTSAIL_IP }}
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
           envs: IMAGE_TAG

@@ -7,12 +7,14 @@ import {
   Model,
   PrimaryKey,
   Table,
+  DeletedAt,
 } from 'sequelize-typescript';
 
 import { UserModel } from './user.model';
 
 @Table({
   tableName: 'refresh_tokens',
+  paranoid: true,
 })
 export class RefreshTokenModel extends Model {
   @PrimaryKey
@@ -54,4 +56,12 @@ export class RefreshTokenModel extends Model {
 
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
+
+  @DeletedAt
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'deleted_at',
+  })
+  declare deletedAt: Date | null;
 }

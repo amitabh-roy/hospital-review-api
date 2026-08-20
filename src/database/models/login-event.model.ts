@@ -8,12 +8,14 @@ import {
   Model,
   PrimaryKey,
   Table,
+  DeletedAt,
 } from 'sequelize-typescript';
 
 import { UserModel } from './user.model';
 
 @Table({
   tableName: 'login_events',
+  paranoid: true,
 })
 export class LoginEventModel extends Model {
   @PrimaryKey
@@ -61,4 +63,12 @@ export class LoginEventModel extends Model {
 
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
+
+  @DeletedAt
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'deleted_at',
+  })
+  declare deletedAt: Date | null;
 }

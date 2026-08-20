@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 
+import { EmailModule } from './common/modules/email.module';
 import { StorageModule } from './common/modules/storage.module';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import appConfig from './config/app.config';
@@ -43,6 +44,7 @@ import databaseConfig from './database/database.config';
         limit: 100,
       },
     ]),
+    EmailModule,
     StorageModule,
     DatabaseModule,
     UsersModule,

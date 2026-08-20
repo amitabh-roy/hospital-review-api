@@ -8,6 +8,7 @@ import {
   Model,
   PrimaryKey,
   Table,
+  DeletedAt,
 } from 'sequelize-typescript';
 
 import { UserModel } from './user.model';
@@ -25,6 +26,7 @@ export type VerificationSubmissionStatus =
 
 @Table({
   tableName: 'verification_submissions',
+  paranoid: true,
 })
 export class VerificationSubmissionModel extends Model {
   @PrimaryKey
@@ -87,4 +89,12 @@ export class VerificationSubmissionModel extends Model {
 
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
+
+  @DeletedAt
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'deleted_at',
+  })
+  declare deletedAt: Date | null;
 }
