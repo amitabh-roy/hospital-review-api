@@ -1,0 +1,86 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches:
+      - release/production
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+  ECR_REPOSITORY: opencurtain/api/production
+  CONTAINER_NAME: opencurtain-api
+  SNS_TOPIC_ARN: ${{ secrets.SNS_TOPIC_ARN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Creating env file
+        run: |
+          echo "${{secrets.ENV_FILE}}" > .env
+          ls -la
+
+      - name: Build and push image
+        env:
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -t $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Deploy to Lightsail
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.LIGHTSAIL_IP }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          envs: IMAGE_TAG
+          script: |
+            aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ steps.ecr-login.outputs.registry }}
+
+            OLD_IMAGE=$(docker inspect --format='{{.Image}}' opencurtain-api 2>/dev/null || true)
+
+            docker pull ${{ steps.ecr-login.outputs.registry }}/opencurtain/api/production:$IMAGE_TAG
+            docker stop opencurtain-api || true
+            docker rm opencurtain-api || true
+
+            docker network create opencurtain-net || true
+
+            docker run -d --name opencurtain-api \
+              --network opencurtain-net \
+              -p 3001:3001 \
+              --restart unless-stopped \
+              ${{ steps.ecr-login.outputs.registry }}/opencurtain/api/production:$IMAGE_TAG
+            
+            sleep 5
+            echo "Running DB migrations...."
+            docker exec opencurtain-api npm run db:migrate
+
+            echo "Running DB seed...."
+            docker exec opencurtain-api npm run db:seed
+
+            if [ -n "$OLD_IMAGE" ]; then
+              docker rmi "$OLD_IMAGE" || true
+            fi
+
+            docker image prune -af
