@@ -50,7 +50,7 @@ export class AdminService {
     private readonly hospitalModel: typeof HospitalModel,
     @InjectModel(AccountDeletionRequestModel)
     private readonly accountDeletionRequestModel: typeof AccountDeletionRequestModel,
-  ) {}
+  ) { }
 
   async getStats(): Promise<ControllerResponse<AdminStatsResponseDto>> {
     try {
@@ -482,6 +482,7 @@ export class AdminService {
         message: ADMIN_RESPONSE.HOSPITAL_CREATED,
         data: hospital,
       };
+
     } catch (error) {
       handleDatabaseException(error, {
         context: AdminService.name,
