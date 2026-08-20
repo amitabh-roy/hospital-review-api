@@ -6,10 +6,12 @@ import {
   Model,
   PrimaryKey,
   Table,
+  DeletedAt,
 } from 'sequelize-typescript';
 
 @Table({
   tableName: 'contact_submissions',
+  paranoid: true,
 })
 export class ContactSubmissionModel extends Model {
   @PrimaryKey
@@ -73,4 +75,12 @@ export class ContactSubmissionModel extends Model {
 
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
+
+  @DeletedAt
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'deleted_at',
+  })
+  declare deletedAt: Date | null;
 }

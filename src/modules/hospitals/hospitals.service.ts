@@ -178,14 +178,30 @@ export class HospitalsService {
       ];
     }
 
+    let dbOrder: any[] = [
+      ['averageRating', 'DESC'],
+      ['name', 'ASC'],
+    ];
+
+    if (query.sort === 'recent') {
+      dbOrder = [['createdAt', 'DESC']];
+    } else if (query.sort === 'lowest') {
+      dbOrder = [
+        ['averageRating', 'ASC'],
+        ['name', 'ASC'],
+      ];
+    } else if (query.sort === 'highest') {
+      dbOrder = [
+        ['averageRating', 'DESC'],
+        ['name', 'ASC'],
+      ];
+    }
+
     const { rows, count } = await this.hospitalModel.findAndCountAll({
       where,
       limit,
       offset,
-      order: [
-        ['averageRating', 'DESC'],
-        ['name', 'ASC'],
-      ],
+      order: dbOrder,
     });
 
     const hospitalIds = rows.map((hospital) => hospital.id);
@@ -291,6 +307,7 @@ export class HospitalsService {
       avgRatio: reviewStats?.avgRatio,
       mealBreaks: reviewStats?.mealBreaks,
       parking: reviewStats?.parking,
+      createdAt: hospital.createdAt,
     };
   }
 

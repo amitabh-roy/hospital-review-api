@@ -7,6 +7,7 @@ import {
   Model,
   PrimaryKey,
   Table,
+  DeletedAt,
 } from 'sequelize-typescript';
 
 import { UserModel } from './user.model';
@@ -20,6 +21,7 @@ export type AuthTokenType = (typeof AUTH_TOKEN_TYPES)[number];
 @Table({
   tableName: 'auth_tokens',
   updatedAt: false,
+  paranoid: true,
 })
 export class AuthTokenModel extends Model {
   @PrimaryKey
@@ -66,4 +68,12 @@ export class AuthTokenModel extends Model {
   declare user?: UserModel;
 
   declare readonly createdAt: Date;
+
+  @DeletedAt
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'deleted_at',
+  })
+  declare deletedAt: Date | null;
 }

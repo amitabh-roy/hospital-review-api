@@ -1,10 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/sequelize';
 
 import { ControllerResponse } from '../../common/interfaces/controller-response.interface';
 import { handleDatabaseException } from '../../common/utils/database-exception.util';
 import { ContactSubmissionModel } from '../../database/models/contact-submission.model';
-import { EmailService } from '../users/email.service';
+import { EmailService } from '../../common/services/email.service';
+import {
+  getContactSubmissionTemplate,
+  getContactAutoReplyTemplate,
+  getContactReplyEmailTemplate,
+} from '../../common/email-templates/contact.templates';
 import { CONTACT_RESPONSE } from './constants/contact.response';
 import { ContactSubmissionResponseDto } from './dto/contact-submission-response.dto';
 import { CreateContactDto } from './dto/create-contact.dto';
@@ -16,6 +22,7 @@ export class ContactService {
     @InjectModel(ContactSubmissionModel)
     private readonly contactModel: typeof ContactSubmissionModel,
     private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   async create(
@@ -30,17 +37,25 @@ export class ContactService {
         message: dto.message.trim(),
       });
 
-      this.emailService.sendContactSubmissionToTeam(
+      const inbox = this.configService.get<string>('email.contactInbox', 'support@opencurtain.com');
+      const teamTemplate = getContactSubmissionTemplate(
         submission.firstName,
         submission.lastName,
         submission.email,
         submission.topic,
         submission.message,
       );
-      this.emailService.sendContactAutoReply(
-        submission.email,
-        submission.firstName,
-      );
+      this.emailService.sendMail({
+        to: inbox,
+        ...teamTemplate,
+        replyTo: submission.email,
+      });
+
+      const autoReplyTemplate = getContactAutoReplyTemplate(submission.firstName);
+      this.emailService.sendMail({
+        to: submission.email,
+        ...autoReplyTemplate,
+      });
 
       return {
         message: CONTACT_RESPONSE.SUBMITTED,
@@ -94,11 +109,11 @@ export class ContactService {
         isRead: true,
       });
 
-      this.emailService.sendContactReplyEmail(
-        submission.email,
-        submission.firstName,
-        reply,
-      );
+      const replyTemplate = getContactReplyEmailTemplate(submission.firstName, reply);
+      this.emailService.sendMail({
+        to: submission.email,
+        ...replyTemplate,
+      });
 
       return {
         message: CONTACT_RESPONSE.REPLIED,

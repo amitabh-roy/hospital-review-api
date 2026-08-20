@@ -4,8 +4,9 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { MulterError } from 'multer';
 
 import { API_RESPONSE } from '../constants/api-response.constants';
@@ -13,11 +14,30 @@ import { ApiResponse } from '../interfaces/api-response.interface';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
     const { statusCode, message, errors } = this.resolveException(exception);
+
+    if (statusCode >= 500) {
+      this.logger.error(
+        `[${request.method}] ${request.url} - Status: ${statusCode} - Message: ${message}`,
+      );
+      console.error('--- INTERNAL SERVER ERROR DETAILS ---');
+      console.error(exception);
+      console.error('-------------------------------------');
+    } else {
+      this.logger.warn(
+        `[${request.method}] ${request.url} - Status: ${statusCode} - Message: ${message}`,
+      );
+      if (errors.length > 0) {
+        this.logger.warn(`Errors: ${JSON.stringify(errors)}`);
+      }
+    }
 
     const body: ApiResponse<null> = {
       status: false,

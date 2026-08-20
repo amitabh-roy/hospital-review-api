@@ -55,4 +55,9 @@ export class ListHospitalsQueryDto {
   @Min(0)
   @Max(5)
   maxRating?: number;
+
+  @ApiPropertyOptional({ example: 'recent' })
+  @IsOptional()
+  @IsString()
+  sort?: string;
 }

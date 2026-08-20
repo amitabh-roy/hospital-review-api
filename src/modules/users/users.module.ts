@@ -16,7 +16,6 @@ import { SavedHospitalModel } from '../../database/models/saved-hospital.model';
 import { RoleModel } from '../../database/models/role.model';
 import { UserModel } from '../../database/models/user.model';
 import { AuthTokensService } from './auth-tokens.service';
-import { EmailService } from './email.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -59,12 +58,11 @@ import { UsersService } from './users.service';
   providers: [
     UsersService,
     AuthTokensService,
-    EmailService,
     JwtStrategy,
     JwtAuthGuard,
     RolesGuard,
     AuthSecurityBootstrap,
   ],
-  exports: [UsersService, EmailService, JwtModule, JwtAuthGuard, RolesGuard],
+  exports: [UsersService, JwtModule, JwtAuthGuard, RolesGuard],
 })
 export class UsersModule {}

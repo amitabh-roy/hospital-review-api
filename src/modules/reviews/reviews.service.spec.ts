@@ -12,7 +12,7 @@ import { ReviewReportModel } from '../../database/models/review-report.model';
 import { ReviewModel } from '../../database/models/review.model';
 import { RoleModel } from '../../database/models/role.model';
 import { VerificationSubmissionModel } from '../../database/models/verification-submission.model';
-import { EmailService } from '../users/email.service';
+import { EmailService } from '../../common/services/email.service';
 import { REVIEW_RESPONSE } from './constants/review.response';
 import { ReviewsService } from './reviews.service';
 
@@ -44,10 +44,7 @@ describe('ReviewsService', () => {
     findByPk: jest.fn(),
   };
   const emailService = {
-    sendReviewSubmittedEmail: jest.fn(),
-    sendReviewApprovedEmail: jest.fn(),
-    sendReviewRejectedEmail: jest.fn(),
-    sendReviewFeedbackEmail: jest.fn(),
+    sendMail: jest.fn(),
   };
   const authenticatedUser = {
     id: 1,

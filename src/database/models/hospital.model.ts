@@ -8,6 +8,8 @@ import {
   PrimaryKey,
   Table,
   Unique,
+  DeletedAt,
+  Default,
 } from 'sequelize-typescript';
 
 import { HospitalUnitModel } from './hospital-unit.model';
@@ -16,6 +18,7 @@ import { UnitModel } from './unit.model';
 
 @Table({
   tableName: 'hospitals',
+  paranoid: true,
 })
 export class HospitalModel extends Model {
   @PrimaryKey
@@ -64,6 +67,21 @@ export class HospitalModel extends Model {
   })
   declare averageRating: number;
 
+  @Default('MANUAL')
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: false,
+  })
+  declare source: string;
+
+  @Default(true)
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    field: 'is_active',
+  })
+  declare isActive: boolean;
+
   @HasMany(() => HospitalUnitModel)
   declare hospitalUnits?: HospitalUnitModel[];
 
@@ -72,6 +90,14 @@ export class HospitalModel extends Model {
 
   @HasMany(() => ReviewModel)
   declare reviews?: ReviewModel[];
+
+  @DeletedAt
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'deleted_at',
+  })
+  declare deletedAt: Date | null;
 
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
