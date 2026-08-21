@@ -12,7 +12,7 @@ permissions:
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
-  ECR_REPOSITORY: opencurtain/api/production
+  ECR_REPOSITORY: opencurtain/api
   CONTAINER_NAME: opencurtain-api
   SNS_TOPIC_ARN: ${{ secrets.SNS_TOPIC_ARN }}
 
@@ -60,7 +60,7 @@ jobs:
 
             OLD_IMAGE=$(docker inspect --format='{{.Image}}' opencurtain-api 2>/dev/null || true)
 
-            docker pull ${{ steps.ecr-login.outputs.registry }}/opencurtain/api/production:$IMAGE_TAG
+            docker pull ${{ steps.ecr-login.outputs.registry }}/opencurtain/api:$IMAGE_TAG
             docker stop opencurtain-api || true
             docker rm opencurtain-api || true
 
@@ -70,7 +70,7 @@ jobs:
               --network opencurtain-net \
               -p 3001:3001 \
               --restart unless-stopped \
-              ${{ steps.ecr-login.outputs.registry }}/opencurtain/api/production:$IMAGE_TAG
+              ${{ steps.ecr-login.outputs.registry }}/opencurtain/api:$IMAGE_TAG
             
             sleep 5
             echo "Running DB migrations...."
@@ -84,3 +84,4 @@ jobs:
             fi
 
             docker image prune -af
+            
