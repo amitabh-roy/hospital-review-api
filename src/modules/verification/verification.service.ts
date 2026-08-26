@@ -7,6 +7,8 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 
 import { S3StorageService } from '../../common/services/s3-storage.service';
+import { EmailService } from '../../common/services/email.service';
+import { getVerificationRejectedEmailTemplate } from '../../common/email-templates/auth.templates';
 import { assertSelfieLiveness } from '../../common/utils/selfie-liveness.util';
 import {
   assertVerificationBadgeFile,
@@ -36,6 +38,7 @@ export class VerificationService {
     @InjectModel(UserModel)
     private readonly userModel: typeof UserModel,
     private readonly s3Storage: S3StorageService,
+    private readonly emailService: EmailService,
   ) {}
 
   async submit(
@@ -185,6 +188,14 @@ export class VerificationService {
           verificationStatus:
             dto.status === 'approved' ? 'verified' : 'rejected',
         });
+
+        if (dto.status === 'rejected') {
+          const rejectTemplate = getVerificationRejectedEmailTemplate(dto.adminNote?.trim() || null);
+          this.emailService.sendMail({
+            to: user.email,
+            ...rejectTemplate,
+          });
+        }
       }
 
       await submission.reload({
