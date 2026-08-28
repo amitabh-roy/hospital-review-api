@@ -794,6 +794,7 @@ export class UsersService {
       roleName: user.role.name,
       isVerified: user.isVerified,
       verificationStatus: user.verificationStatus,
+      warningMessage: user.warningMessage ?? null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

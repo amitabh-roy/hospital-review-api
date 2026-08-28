@@ -97,6 +97,13 @@ export class UserModel extends Model {
   })
   declare deletedAt: Date | null;
 
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+    field: 'warning_message',
+  })
+  declare warningMessage: string | null;
+
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 }

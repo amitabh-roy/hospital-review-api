@@ -9,4 +9,5 @@ export class AdminUserResponseDto {
   reviewCount!: number;
   createdAt!: Date;
   updatedAt!: Date;
+  deletedAt!: Date | null;
 }

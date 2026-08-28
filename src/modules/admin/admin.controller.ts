@@ -112,4 +112,25 @@ export class AdminController {
   deleteHospital(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.deleteHospital(id);
   }
+
+  @Post('users/:id/warn')
+  warnUser(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('reason') reason: string,
+  ) {
+    return this.adminService.warnUser(id, reason);
+  }
+
+  @Post('users/:id/suspend')
+  suspendUser(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('reason') reason: string,
+  ) {
+    return this.adminService.suspendUser(id, reason);
+  }
+
+  @Post('users/:id/reactivate')
+  reactivateUser(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.reactivateUser(id);
+  }
 }

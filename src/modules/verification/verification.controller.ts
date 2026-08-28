@@ -85,6 +85,12 @@ export class VerificationController {
     );
   }
 
+  @Get('verifications/my-latest')
+  @UseGuards(JwtAuthGuard)
+  getMyLatest(@CurrentUser() user: AuthenticatedUser) {
+    return this.verificationService.getMyLatest(user);
+  }
+
   @Get('admin/verifications')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

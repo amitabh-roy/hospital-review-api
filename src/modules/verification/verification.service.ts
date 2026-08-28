@@ -91,6 +91,11 @@ export class VerificationService {
         identityFilePath,
       });
 
+      await this.userModel.update(
+        { verificationStatus: 'pending' },
+        { where: { id: user.id } },
+      );
+
       const loaded = await this.loadSubmission(submission.id);
 
       return {
@@ -125,6 +130,28 @@ export class VerificationService {
       handleDatabaseException(error, {
         context: VerificationService.name,
         operation: 'list pending verifications',
+      });
+    }
+  }
+
+  async getMyLatest(
+    user: AuthenticatedUser,
+  ): Promise<ControllerResponse<VerificationSubmissionResponseDto | null>> {
+    try {
+      const submission = await this.verificationModel.findOne({
+        where: { userId: user.id },
+        order: [['createdAt', 'DESC']],
+        include: [{ model: UserModel, include: [RoleModel] }],
+      });
+
+      return {
+        message: VERIFICATION_RESPONSE.FETCHED,
+        data: submission ? this.toResponse(submission) : null,
+      };
+    } catch (error) {
+      return handleDatabaseException(error, {
+        context: VerificationService.name,
+        operation: 'get latest verification',
       });
     }
   }

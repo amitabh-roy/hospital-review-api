@@ -55,7 +55,7 @@ describe('ReviewsService', () => {
     isVerified: true,
     verificationStatus: 'verified' as const,
     createdAt: new Date(),
-    updatedAt: new Date(),
+    updatedAt: new Date(), warningMessage: null,
   };
 
   beforeEach(async () => {
@@ -119,7 +119,7 @@ describe('ReviewsService', () => {
       shiftType: 'day',
       status: 'pending',
       createdAt: new Date(),
-      updatedAt: new Date(),
+      updatedAt: new Date(), warningMessage: null,
       unit: { name: 'Telemetry' },
       user: { fullName: 'Taylor Brooks' },
       role: { name: 'nurse' },
@@ -248,7 +248,7 @@ describe('ReviewsService', () => {
           shiftType: 'day',
           status: 'pending',
           createdAt: new Date(),
-          updatedAt: new Date(),
+          updatedAt: new Date(), warningMessage: null,
           unit: { name: 'ICU' },
           user: { fullName: 'Taylor Brooks' },
           role: { name: 'nurse' },

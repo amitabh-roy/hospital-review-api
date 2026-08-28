@@ -8,6 +8,7 @@ export interface AuthenticatedUser {
   roleName: string;
   isVerified: boolean;
   verificationStatus: UserVerificationStatus;
+  warningMessage: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
