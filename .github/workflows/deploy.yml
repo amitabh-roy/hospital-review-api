@@ -3,7 +3,7 @@ name: Backend CI/CD
 on:
   push:
     branches:
-      - development
+      - feature/tailscale-integration
 
 permissions:
   id-token: write
@@ -45,6 +45,13 @@ jobs:
           docker build \
             -t $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:ci
 
       - name: Deploy to Lightsail
         env:
