@@ -20,7 +20,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import {
-  AdminUpdateVerificationSwagger,
+
   ForgotPasswordSwagger,
   LoginSwagger,
   LogoutSwagger,
@@ -31,7 +31,7 @@ import {
   SignupSwagger,
   VerifyEmailSwagger,
 } from './docs/users.swagger';
-import { AdminUpdateVerificationDto } from './dto/admin-update-verification.dto';
+
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -119,16 +119,7 @@ export class UsersController {
     return this.usersService.resetPassword(dto.token, dto.password);
   }
 
-  @Patch('admin/users/:id/verification')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
-  @AdminUpdateVerificationSwagger()
-  adminUpdateVerification(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: AdminUpdateVerificationDto,
-  ) {
-    return this.usersService.adminUpdateVerification(id, dto);
-  }
+
 
   @Get('me')
   @UseGuards(JwtAuthGuard)

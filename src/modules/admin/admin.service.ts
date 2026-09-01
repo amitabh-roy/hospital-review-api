@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { col, fn, Op } from 'sequelize';
 
@@ -14,6 +14,7 @@ import { RoleModel } from '../../database/models/role.model';
 import { UserModel } from '../../database/models/user.model';
 import { VerificationSubmissionModel } from '../../database/models/verification-submission.model';
 import { UnitModel } from '../../database/models/unit.model';
+import { EmailService } from '../../common/services/email.service';
 import { ADMIN_RESPONSE } from './constants/admin.response';
 import { AdminSecurityQueryDto } from './dto/admin-security-query.dto';
 import { AdminSecurityResponseDto } from './dto/admin-security-response.dto';
@@ -50,6 +51,7 @@ export class AdminService {
     private readonly hospitalModel: typeof HospitalModel,
     @InjectModel(AccountDeletionRequestModel)
     private readonly accountDeletionRequestModel: typeof AccountDeletionRequestModel,
+    private readonly emailService: EmailService,
   ) { }
 
   async getStats(): Promise<ControllerResponse<AdminStatsResponseDto>> {
@@ -112,6 +114,7 @@ export class AdminService {
       const users = await this.userModel.findAll({
         include: [RoleModel],
         order: [['createdAt', 'DESC']],
+        paranoid: false,
       });
 
       const reviewCounts = (await this.reviewModel.findAll({
@@ -137,6 +140,7 @@ export class AdminService {
           reviewCount: countByUser.get(user.id) ?? 0,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+          deletedAt: user.deletedAt,
         }));
 
       return {
@@ -159,6 +163,7 @@ export class AdminService {
         where: { verificationStatus: 'rejected' },
         include: [RoleModel],
         order: [['updatedAt', 'DESC']],
+        paranoid: false,
       });
 
       const items = users
@@ -174,6 +179,7 @@ export class AdminService {
           reviewCount: 0,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+          deletedAt: user.deletedAt,
         }));
 
       return {
@@ -533,6 +539,94 @@ export class AdminService {
       handleDatabaseException(error, {
         context: AdminService.name,
         operation: 'delete hospital',
+      });
+    }
+  }
+
+  async warnUser(userId: number, reason: string): Promise<ControllerResponse<any>> {
+    try {
+      const user = await this.userModel.findByPk(userId);
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      await user.update({ warningMessage: reason });
+
+      this.emailService.sendMail({
+        to: user.email,
+        subject: 'OpenCurtain Account Warning',
+        text: `Hello ${user.fullName},\n\nWe are writing to issue a formal warning regarding your OpenCurtain account. Reason: ${reason}\n\nPlease ensure your future activities comply with our terms of service.\n\nThank you,\nOpenCurtain Admin`,
+        html: `<p>Hello ${user.fullName},</p><p>We are writing to issue a formal warning regarding your OpenCurtain account. Reason: ${reason}</p><p>Please ensure your future activities comply with our terms of service.</p><p>Thank you,<br>OpenCurtain Admin</p>`,
+      });
+
+      return {
+        message: 'User warned successfully',
+        data: null,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: AdminService.name,
+        operation: 'warn user',
+      });
+    }
+  }
+
+  async suspendUser(userId: number, reason: string): Promise<ControllerResponse<any>> {
+    try {
+      const user = await this.userModel.findByPk(userId);
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      await user.destroy();
+
+      this.emailService.sendMail({
+        to: user.email,
+        subject: 'OpenCurtain Account Suspended',
+        text: `Hello ${user.fullName},\n\nYour OpenCurtain account has been suspended by an administrator. Reason: ${reason}\n\nIf you believe this was in error, please contact support.\n\nThank you,\nOpenCurtain Admin`,
+        html: `<p>Hello ${user.fullName},</p><p>Your OpenCurtain account has been suspended by an administrator. Reason: ${reason}</p><p>If you believe this was in error, please contact support.</p><p>Thank you,<br>OpenCurtain Admin</p>`,
+      });
+
+      return {
+        message: 'User suspended successfully',
+        data: null,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: AdminService.name,
+        operation: 'suspend user',
+      });
+    }
+  }
+
+  async reactivateUser(userId: number): Promise<ControllerResponse<any>> {
+    try {
+      const user = await this.userModel.findByPk(userId, { paranoid: false });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      await user.restore();
+      await user.update({ warningMessage: null });
+
+      this.emailService.sendMail({
+        to: user.email,
+        subject: 'OpenCurtain Account Reactivated',
+        text: `Hello ${user.fullName},\n\nYour OpenCurtain account has been successfully reactivated. You can now log in and continue using the platform.\n\nThank you,\nOpenCurtain Admin`,
+        html: `<p>Hello ${user.fullName},</p><p>Your OpenCurtain account has been successfully reactivated. You can now log in and continue using the platform.</p><p>Thank you,<br>OpenCurtain Admin</p>`,
+      });
+
+      return {
+        message: 'User reactivated successfully',
+        data: null,
+      };
+    } catch (error) {
+      handleDatabaseException(error, {
+        context: AdminService.name,
+        operation: 'reactivate user',
       });
     }
   }

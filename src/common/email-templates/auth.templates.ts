@@ -31,3 +31,15 @@ export const getPasswordResetEmailTemplate = (link: string) => {
 
   return { subject: 'Reset your OpenCurtain password', text, html };
 };
+
+export const getVerificationRejectedEmailTemplate = (reason: string | null) => {
+  const reasonText = reason ? `\n\nReason: ${reason}` : '';
+  const reasonHtml = reason ? `<p><strong>Reason:</strong> ${reason}</p>` : '';
+  
+  const text = `Your recent credential verification was not approved.${reasonText}\n\nYou can log in to your account and submit a new verification.`;
+  const html = getBaseHtmlTemplate(
+    `<p>Hi there,</p><p>Your recent credential verification was not approved.</p>${reasonHtml}<p>You can log in to your account and submit a new verification.</p>`
+  );
+
+  return { subject: 'Verification Update - OpenCurtain', text, html };
+};

@@ -20,6 +20,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../users/interfaces/authenticated-user.interface';
 import { ReviewAccountDeletionDto } from '../users/dto/review-account-deletion.dto';
+import { AdminUpdateVerificationDto } from '../users/dto/admin-update-verification.dto';
+import { AdminUpdateVerificationSwagger } from '../users/docs/users.swagger';
 import { UsersService } from '../users/users.service';
 import { AdminSecurityQueryDto } from './dto/admin-security-query.dto';
 import { AdminService } from './admin.service';
@@ -111,5 +113,35 @@ export class AdminController {
   @Delete('hospitals/:id')
   deleteHospital(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.deleteHospital(id);
+  }
+
+  @Post('users/:id/warn')
+  warnUser(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('reason') reason: string,
+  ) {
+    return this.adminService.warnUser(id, reason);
+  }
+
+  @Post('users/:id/suspend')
+  suspendUser(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('reason') reason: string,
+  ) {
+    return this.adminService.suspendUser(id, reason);
+  }
+
+  @Post('users/:id/reactivate')
+  reactivateUser(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.reactivateUser(id);
+  }
+
+  @Patch('users/:id/verification')
+  @AdminUpdateVerificationSwagger()
+  adminUpdateVerification(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AdminUpdateVerificationDto,
+  ) {
+    return this.usersService.adminUpdateVerification(id, dto);
   }
 }

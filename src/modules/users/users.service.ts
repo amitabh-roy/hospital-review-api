@@ -110,7 +110,7 @@ export class UsersService {
         throw new NotFoundException(USER_RESPONSE.USER_NOT_FOUND);
       }
 
-      await this.sendVerificationEmail(persistedUser);
+      // await this.sendVerificationEmail(persistedUser);
       const welcomeTemplate = getWelcomeEmailTemplate(persistedUser.fullName);
       this.emailService.sendMail({
         to: persistedUser.email,
@@ -794,6 +794,7 @@ export class UsersService {
       roleName: user.role.name,
       isVerified: user.isVerified,
       verificationStatus: user.verificationStatus,
+      warningMessage: user.warningMessage ?? null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
